@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hikoboshi.local/schemas/hikoboshi-package.schema.json",
+  "title": "Hikoboshi compiled package manifest (architecture-agnostic)",
+  "description": "Generic package manifest schema covering the architecture-agnostic fields shared by every Hikoboshi compiled package. Per-architecture parameter pods (mpnn_v1, plm_v1, ...) live in the weights/architectures/<kind>.schema.json fragments.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "model_name",
+    "aliases",
+    "model_family",
+    "model_version",
+    "dtype",
+    "tensors",
+    "checksum",
+    "checksum_algorithm",
+    "source_checkpoint",
+    "source_checkpoint_checksum",
+    "generation_tool",
+    "generation_tool_version",
+    "generation_date",
+    "gap_parameter_family",
+    "gap_open",
+    "gap_ext",
+    "soft_gap_parameter_family",
+    "soft_gap_open",
+    "soft_gap_ext",
+    "similarity",
+    "validation_status",
+    "provenance_status",
+    "notes",
+    "architecture_kind"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "minLength": 1},
+    "model_name": {"type": "string", "minLength": 1},
+    "aliases": {
+      "type": "array",
+      "minItems": 0,
+      "items": {"type": "string", "minLength": 1, "pattern": "^[A-Za-z0-9._-]+$"}
+    },
+    "model_family": {"type": "string", "minLength": 1},
+    "model_version": {
+      "oneOf": [
+        {"type": "string", "minLength": 1},
+        {"const": "pending"}
+      ]
+    },
+    "architecture_kind": {
+      "type": "string",
+      "enum": [
+        "mpnn_v1",
+        "plm_v1",
+        "substitution_lookup_v1",
+        "gvp_v1",
+        "graph_ir_v1"
+      ]
+    },
+    "dtype": {"type": "string", "minLength": 1},
+    "tensors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "shape", "dtype", "checksum", "checksum_algorithm"],
+        "additionalProperties": true,
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "shape": {
+            "oneOf": [
+              {"const": "pending"},
+              {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "oneOf": [
+                    {"type": "integer", "minimum": 1},
+                    {"const": "pending"}
+                  ]
+                }
+              }
+            ]
+          },
+          "dtype": {"type": "string", "minLength": 1},
+          "checksum": {"type": "string", "minLength": 1},
+          "checksum_algorithm": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "checksum": {"type": "string", "minLength": 1},
+    "checksum_algorithm": {"type": "string", "minLength": 1},
+    "source_checkpoint": {"type": "string", "minLength": 1},
+    "source_checkpoint_checksum": {"type": "string", "minLength": 1},
+    "generation_tool": {"type": "string", "minLength": 1},
+    "generation_tool_version": {"type": "string", "minLength": 1},
+    "generation_date": {"type": "string", "minLength": 1},
+    "gap_parameter_family": {"type": "string", "minLength": 1},
+    "gap_open": {
+      "oneOf": [
+        {"type": "number"},
+        {"const": "pending"}
+      ]
+    },
+    "gap_ext": {
+      "oneOf": [
+        {"type": "number"},
+        {"const": "pending"}
+      ]
+    },
+    "soft_gap_parameter_family": {"type": "string", "minLength": 1},
+    "soft_gap_open": {
+      "oneOf": [
+        {"type": "number"},
+        {"const": "pending"}
+      ]
+    },
+    "soft_gap_ext": {
+      "oneOf": [
+        {"type": "number"},
+        {"const": "pending"}
+      ]
+    },
+    "similarity": {"type": "string", "minLength": 1},
+    "validation_status": {"type": "string", "minLength": 1},
+    "provenance_status": {"type": "string", "minLength": 1},
+    "notes": {"type": "string", "minLength": 1},
+    "compiled_package_descriptor": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "gaps": {"$ref": "#/$defs/affine_gap_family"},
+        "soft_gaps": {"$ref": "#/$defs/affine_gap_family"}
+      },
+      "required": ["gaps", "soft_gaps"]
+    }
+  },
+  "$defs": {
+    "affine_gap_family": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "gap_family",
+        "gap_model",
+        "gap_open",
+        "gap_ext",
+        "convention",
+        "calibrated_for_score_method"
+      ],
+      "properties": {
+        "gap_family": {"type": "string", "minLength": 1},
+        "gap_model": {"const": "affine"},
+        "gap_open": {"type": "number"},
+        "gap_ext": {"type": "number"},
+        "convention": {"const": "gap_open_plus_k_minus_1_gap_ext"},
+        "calibrated_for_score_method": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

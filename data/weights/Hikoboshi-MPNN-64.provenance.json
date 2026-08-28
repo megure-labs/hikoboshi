@@ -1,0 +1,67 @@
+{
+  "schema_version": "0.1.0",
+  "model_name": "Hikoboshi-MPNN-64",
+  "source_artifact": "archive-embedded-header-0348104439a78dae",
+  "source_artifact_archive_path": "archive/hikoboshi/_core/src/hikoboshi/weights/embedded_mpnn_weights.h",
+  "source_artifact_sha256": "0348104439a78dae87012512408a203a4bf96755554df60fde3f21a8eafb1951",
+  "alternate_historical_direct_array_source": "archive/hikoboshi/_core/src/hikoboshi/weights/pytorch_weights.h",
+  "alternate_historical_direct_array_source_sha256": "e0f46938ddb60c26eb217a29e8195be11c19748037553b02cbf197141f5cf5a8",
+  "extracted_blob_length": 1031992,
+  "extracted_blob_sha256": "c61e079b539af5e31ba145ab91f7f607634295e90240e444a5bf34013304175b",
+  "safetensors_header_length": 6248,
+  "safetensors_data_offset": 6256,
+  "safetensors_data_length": 1025736,
+  "safetensors_data_sha256": "8b9d6c48080f94d325bae188a1477e211018f3a926d1e49aaa56cc6fc5764316",
+  "archived_tensor_count": 75,
+  "runtime_tensor_count": 73,
+  "ignored_historical_tensors": [
+    {
+      "name": "gap",
+      "shape": [
+        1
+      ],
+      "dtype": "float32",
+      "checksum": "630f3dc525be02dd4a7fe67068fa9d28815d7e5b61ef515a722880c72b772433",
+      "checksum_algorithm": "sha256",
+      "reason": "historical soft-SW-associated gap tensor; not a Hikoboshi 0.1.0 runtime default"
+    },
+    {
+      "name": "gap_open",
+      "shape": [
+        1
+      ],
+      "dtype": "float32",
+      "checksum": "b39ee580951b3f16c00afb24f9526f2ee5a6dfe31483839ac72eb01fbc749a61",
+      "checksum_algorithm": "sha256",
+      "reason": "historical soft-SW-associated gap tensor; not a Hikoboshi 0.1.0 runtime default"
+    }
+  ],
+  "hard_sw_gap_defaults": {
+    "gap_open": -1.40000,
+    "gap_ext": -0.150000,
+    "source_gap_open": -1.399999999999999,
+    "source_gap_ext": -0.15000000000000008,
+    "source_artifact": "grid_search_fine_results.csv",
+    "source_artifact_sha256": "1e099107844acccb3b89b87996f3382d7adbbd6afb8c1f2daa3271c559a6561b",
+    "selection_metric": "f1",
+    "selection_metric_value": 0.6420386534701755,
+    "projection": "six significant figures"
+  },
+  "soft_sw_gap_defaults": {
+    "temperature": 1.00000,
+    "gap_open": -3.21337,
+    "gap_ext": -0.111704,
+    "source_gap_open_float32": -3.213371753692627,
+    "source_gap_ext_float32": -0.11170446872711182,
+    "source": "excluded checkpoint tensors gap_open and gap in archive-embedded-header-0348104439a78dae",
+    "gap_open_tensor_sha256": "b39ee580951b3f16c00afb24f9526f2ee5a6dfe31483839ac72eb01fbc749a61",
+    "gap_ext_tensor_sha256": "630f3dc525be02dd4a7fe67068fa9d28815d7e5b61ef515a722880c72b772433",
+    "cross_reference_run_id": "most3hun",
+    "cross_reference_artifact": "parent_most3hun_mpnn64_baseline_T5to1.csv",
+    "cross_reference_artifact_sha256": "ae57111188b55e71f0ccfebd76380894faf88717eb9df71500137b5f786dfdfa",
+    "projection": "six significant figures"
+  },
+  "generation_tool": "extract_embedded_mpnn64_header (Megure Labs internal)",
+  "generation_tool_version": "i08-20260428",
+  "generation_date": "2026-04-28"
+}

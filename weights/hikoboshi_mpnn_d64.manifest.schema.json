@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hikoboshi.local/schemas/hikoboshi-mpnn-d64-manifest.schema.json",
+  "title": "hikoboshi-mpnn-d64 weight manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "model_name",
+    "aliases",
+    "model_family",
+    "model_version",
+    "hidden_dim",
+    "dtype",
+    "tensors",
+    "checksum",
+    "checksum_algorithm",
+    "source_checkpoint",
+    "source_checkpoint_checksum",
+    "generation_tool",
+    "generation_tool_version",
+    "generation_date",
+    "gap_parameter_family",
+    "gap_open",
+    "gap_ext",
+    "soft_gap_parameter_family",
+    "soft_gap_open",
+    "soft_gap_ext",
+    "similarity",
+    "validation_status",
+    "provenance_status",
+    "notes"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "minLength": 1},
+    "model_name": {"const": "hikoboshi-mpnn-d64"},
+    "aliases": {"const": ["mpnn64", "mpnn-64", "Hikoboshi-MPNN-64"]},
+    "model_family": {"const": "Hikoboshi-MPNN"},
+    "model_version": {"type": "string", "minLength": 1},
+    "hidden_dim": {"const": 64},
+    "dtype": {"type": "string", "minLength": 1},
+    "tensors": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "shape", "dtype", "checksum", "checksum_algorithm"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "shape": {
+            "oneOf": [
+              {"const": "pending"},
+              {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "oneOf": [
+                    {"type": "integer", "minimum": 1},
+                    {"const": "pending"}
+                  ]
+                }
+              }
+            ]
+          },
+          "dtype": {"type": "string", "minLength": 1},
+          "checksum": {"type": "string", "minLength": 1},
+          "checksum_algorithm": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "checksum": {"type": "string", "minLength": 1},
+    "checksum_algorithm": {"type": "string", "minLength": 1},
+    "source_checkpoint": {"const": "archive-embedded-header-0348104439a78dae"},
+    "source_checkpoint_checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "generation_tool": {"type": "string", "minLength": 1},
+    "generation_tool_version": {"type": "string", "minLength": 1},
+    "generation_date": {"type": "string", "minLength": 1},
+    "gap_parameter_family": {"const": "Hikoboshi 0.1.0 hard-SW"},
+    "gap_open": {"const": -1.40000},
+    "gap_ext": {"const": -0.150000},
+    "soft_gap_parameter_family": {"const": "Hikoboshi 0.1.0 soft-SW"},
+    "soft_gap_open": {"const": -3.21337},
+    "soft_gap_ext": {"const": -0.111704},
+    "similarity": {"const": "raw_dot_product"},
+    "validation_status": {"type": "string", "minLength": 1},
+    "provenance_status": {"type": "string", "minLength": 1},
+    "notes": {"type": "string", "minLength": 1}
+  }
+}

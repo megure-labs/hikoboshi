@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use Hikoboshi, please cite this software release."
+title: "Hikoboshi: Native protein alignment and design runtime"
+type: software
+version: 0.1.0
+date-released: 2026-08-25
+authors:
+  - family-names: Mogilevsky
+    given-names: Casey Sumagaysay
+repository-code: "https://github.com/megure-labs/hikoboshi"
+license: Apache-2.0

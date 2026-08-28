@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hikoboshi.local/schemas/hikoboshi-architecture-plm-v1.schema.json",
+  "title": "Hikoboshi plm_v1 per-architecture parameter pod",
+  "description": "Per-architecture parameter fragment for sequence-only protein language models (plm_v1). Per the model/scoring package decision report, the plm_v1 pod enumerates the architecture knobs the package descriptor needs to surface so consumers can construct or validate forward-pass plans without inspecting the weights blob.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "hidden_dimension",
+    "attention_layer_count",
+    "attention_head_count",
+    "ffn_hidden_dim",
+    "vocab_size",
+    "max_sequence_length",
+    "positional_kind",
+    "norm_kind",
+    "activation",
+    "attention_kind"
+  ],
+  "properties": {
+    "hidden_dimension": {"type": "integer", "minimum": 1},
+    "attention_layer_count": {"type": "integer", "minimum": 1},
+    "attention_head_count": {"type": "integer", "minimum": 1},
+    "ffn_hidden_dim": {"type": "integer", "minimum": 1},
+    "vocab_size": {"type": "integer", "minimum": 1},
+    "max_sequence_length": {"type": "integer", "minimum": 1},
+    "positional_kind": {
+      "type": "string",
+      "enum": ["rotary", "learned_absolute", "sinusoidal"]
+    },
+    "norm_kind": {
+      "type": "string",
+      "enum": ["layer_norm", "rms_norm"]
+    },
+    "activation": {
+      "type": "string",
+      "enum": ["gelu", "relu", "swish", "silu"]
+    },
+    "attention_kind": {
+      "type": "string",
+      "enum": [
+        "multi_head_scaled_dot_product",
+        "rotary_multi_head_scaled_dot_product"
+      ]
+    }
+  }
+}

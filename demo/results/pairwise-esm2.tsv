@@ -1,0 +1,5 @@
+query_index	target_index	pair_id	raw_sw_score	aligned_pairs	coverage_query	coverage_target	coverage_mean	identity	rmsd	tm_score_query	tm_score_target	lddt	lddt_byA	lddt_byB	lddt_aln	coverage_byA	coverage_byB	ecs	fasta_path	pdb_path
+3	4	1MBO__1MYT	148.845	127	0.830065	0.869863	0.849498	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	demo/results/pairwise-esm2/alignments/0004_1MBO_A_model1__0005_1MYT_A_model1.fasta	
+3	2	1MBO__1MBA	141.304	119	0.777778	0.815068	0.795987	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	demo/results/pairwise-esm2/alignments/0004_1MBO_A_model1__0003_1MBA_A_model1.fasta	
+5	7	1REX__2LYZ	352.947	129	0.992308	1	0.996139	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	demo/results/pairwise-esm2/alignments/0006_1REX_A_model1__0008_2LYZ_A_model1.fasta	
+3	7	1MBO__2LYZ	90.9574	71	0.464052	0.550388	0.503546	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	demo/results/pairwise-esm2/alignments/0004_1MBO_A_model1__0008_2LYZ_A_model1.fasta	

@@ -1,0 +1,15 @@
+hikoboshi_algorithms_sources = files(
+  'pairwise/pairwise.cpp',
+  'pairwise/pairwise_workspace.cpp',
+  'pairwise/result_assembly.cpp',
+  'all_vs_all/all_vs_all.cpp',
+  'all_vs_all/pair_scheduler.cpp',
+  'all_vs_all/streaming_sink.cpp',
+  'inverse_fold.cpp',
+  'metrics/coverage.cpp',
+  'metrics/identity.cpp',
+  'metrics/rmsd.cpp',
+  'metrics/kabsch.cpp',
+  'metrics/tm_score.cpp',
+  'metrics/lddt.cpp',
+)

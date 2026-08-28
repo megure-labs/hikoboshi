@@ -1,0 +1,183 @@
+{
+  "schema_version": "0.1.0",
+  "model_name": "Hikoboshi-ESM2-8M",
+  "architecture_kind": "plm_v1",
+  "source_artifact": "megure-labs-internal://checkpoints/hikoboshi-esm2-8m/final_model.pt",
+  "source_artifact_archive_path": "megure-labs-internal://checkpoints/hikoboshi-esm2-8m/final_model.pt",
+  "source_artifact_sha256": "afa959cb694cfbe7358b06f5c04eb9c67e8c36f89e7b2518cb6e3f8832d0d9ce",
+  "training_corpus_pointer": "esm2_t6_8M_UR50D continued-trained on SCOPe40 (Casey, 2026-05-08); underlying ESM2 pretraining corpus is UniRef50/UniRef90 per Lin et al., Science 2023",
+  "training_corpus_notes": "Casey's checkpoint resumes from stock esm2_t6_8M_UR50D.pt and fine-tunes with joint MLM + alignment co-training on SCOPe40 (50 epochs, best val F1 0.4726, global step 39850). The 29-row embedding table is the compacted local alphabet (drops the four FAIR-only tokens <unk>, ., -, <null_1>); see hikoboshi_train/esm2_encoder.py:_LOCAL_TO_FAIR_TOKEN_MAP.",
+  "extracted_blob_length": 29640016,
+  "extracted_blob_sha256": "7b1fea896ddbe6abb41e0f171cd1f9cce74868fbe44563afb87f3b176ccaca03",
+  "safetensors_header_length": 9288,
+  "safetensors_data_offset": 9296,
+  "safetensors_data_length": 29630720,
+  "safetensors_data_sha256": "315bdd0d2fe7382afa9f84ea9048d7c5deb87d310d05bd84e020f0f5619a6dca",
+  "archived_tensor_count": 112,
+  "runtime_tensor_count": 99,
+  "ignored_historical_tensors": [
+    {
+      "name": "encoder.lm_dense.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "4f59719c188f1e765f5f645c511f2c7bd97d542bf70f1933dad2b1ddf67846cc",
+      "checksum_algorithm": "sha256",
+      "reason": "training-time MLM head dense layer; not used at inference"
+    },
+    {
+      "name": "encoder.lm_dense.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "fd0bdd508b99a86c77d520c7666ace1e58a2a189fce91c110a026d14119be953",
+      "checksum_algorithm": "sha256",
+      "reason": "training-time MLM head dense bias; not used at inference"
+    },
+    {
+      "name": "encoder.lm_layer_norm.weight",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "a7407ac3c0440aa78c08613f1f13139773dd43ef0b72aa0f5c802e279200fafa",
+      "checksum_algorithm": "sha256",
+      "reason": "training-time MLM head LayerNorm gamma; not used at inference"
+    },
+    {
+      "name": "encoder.lm_layer_norm.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "b623370a285e3218b092a7f330ec9b689229e3d3fd4d7b811b9c774e88b94c07",
+      "checksum_algorithm": "sha256",
+      "reason": "training-time MLM head LayerNorm beta; not used at inference"
+    },
+    {
+      "name": "encoder.lm_bias",
+      "shape": [
+        29
+      ],
+      "dtype": "float32",
+      "checksum": "917917f6b8fa0ee88d2a622faf48aca0abde0b220ea0c9daa2b2af14539f1928",
+      "checksum_algorithm": "sha256",
+      "reason": "training-time MLM head logits bias; not used at inference"
+    },
+    {
+      "name": "gap_open",
+      "shape": [
+        1
+      ],
+      "dtype": "float32",
+      "checksum": "fdc124debc32686242bc1f8f0dd9e9e4045003b2ab1f16b5b20549c6d45e5089",
+      "checksum_algorithm": "sha256",
+      "reason": "training-time T=1 scalar gap_open parameter; ships in calibrated soft_sw_gap_defaults instead"
+    },
+    {
+      "name": "gap_ext",
+      "shape": [
+        1
+      ],
+      "dtype": "float32",
+      "checksum": "c6218a64dd0d79d814712aaef6b569e6119775cb4dcfaff1a8b09950ba7e30f3",
+      "checksum_algorithm": "sha256",
+      "reason": "training-time T=1 scalar gap_ext parameter; ships in calibrated soft_sw_gap_defaults instead"
+    },
+    {
+      "name": "encoder.layers.0.rope.inv_freq",
+      "shape": [
+        8
+      ],
+      "dtype": "float32",
+      "checksum": "fd165ec4f5cae017289ab97087795985daf49bf3af6fafccb850786d30da517d",
+      "checksum_algorithm": "sha256",
+      "reason": "RoPE inverse-frequency table; constant derived from head_dim, recomputed by the encoder workspace"
+    },
+    {
+      "name": "encoder.layers.1.rope.inv_freq",
+      "shape": [
+        8
+      ],
+      "dtype": "float32",
+      "checksum": "fd165ec4f5cae017289ab97087795985daf49bf3af6fafccb850786d30da517d",
+      "checksum_algorithm": "sha256",
+      "reason": "RoPE inverse-frequency table; constant derived from head_dim, recomputed by the encoder workspace"
+    },
+    {
+      "name": "encoder.layers.2.rope.inv_freq",
+      "shape": [
+        8
+      ],
+      "dtype": "float32",
+      "checksum": "fd165ec4f5cae017289ab97087795985daf49bf3af6fafccb850786d30da517d",
+      "checksum_algorithm": "sha256",
+      "reason": "RoPE inverse-frequency table; constant derived from head_dim, recomputed by the encoder workspace"
+    },
+    {
+      "name": "encoder.layers.3.rope.inv_freq",
+      "shape": [
+        8
+      ],
+      "dtype": "float32",
+      "checksum": "fd165ec4f5cae017289ab97087795985daf49bf3af6fafccb850786d30da517d",
+      "checksum_algorithm": "sha256",
+      "reason": "RoPE inverse-frequency table; constant derived from head_dim, recomputed by the encoder workspace"
+    },
+    {
+      "name": "encoder.layers.4.rope.inv_freq",
+      "shape": [
+        8
+      ],
+      "dtype": "float32",
+      "checksum": "fd165ec4f5cae017289ab97087795985daf49bf3af6fafccb850786d30da517d",
+      "checksum_algorithm": "sha256",
+      "reason": "RoPE inverse-frequency table; constant derived from head_dim, recomputed by the encoder workspace"
+    },
+    {
+      "name": "encoder.layers.5.rope.inv_freq",
+      "shape": [
+        8
+      ],
+      "dtype": "float32",
+      "checksum": "fd165ec4f5cae017289ab97087795985daf49bf3af6fafccb850786d30da517d",
+      "checksum_algorithm": "sha256",
+      "reason": "RoPE inverse-frequency table; constant derived from head_dim, recomputed by the encoder workspace"
+    }
+  ],
+  "hard_sw_gap_defaults": {
+    "gap_open": -1.01982,
+    "gap_ext": 0.225736,
+    "source_gap_open_float32": -1.0198204517364502,
+    "source_gap_ext_float32": 0.2257363647222519,
+    "calibration_method": "gap-only stepwise temperature anneal from T=1 to T=1e-12 at constant learning rate 0.0004",
+    "wandb_project": "pfalign-esm2-8m-gaponly-stepwise-anneal",
+    "wandb_run_id": "t28wemg9",
+    "terminal_step": 239100,
+    "source_artifact": "esm2_8m_stepwise_constlr_T1to1e-12_300ep_20260514_KEEPER.csv",
+    "source_artifact_sha256": "63e131ad96c4ada785b36a21bab4482cf8f2b303eb7ad729f059804052cde94a",
+    "projection": "six significant figures"
+  },
+  "soft_sw_gap_defaults": {
+    "temperature": 1.00000,
+    "gap_open": -6.72805,
+    "gap_ext": -0.0159468,
+    "source_gap_open_float32": -6.728054046630859,
+    "source_gap_ext_float32": -0.01594681292772293,
+    "source": "excluded checkpoint tensors gap_open and gap_ext",
+    "source_checkpoint_sha256": "afa959cb694cfbe7358b06f5c04eb9c67e8c36f89e7b2518cb6e3f8832d0d9ce",
+    "gap_open_tensor_sha256": "fdc124debc32686242bc1f8f0dd9e9e4045003b2ab1f16b5b20549c6d45e5089",
+    "gap_ext_tensor_sha256": "c6218a64dd0d79d814712aaef6b569e6119775cb4dcfaff1a8b09950ba7e30f3",
+    "cross_reference_run_id": "yamdxi1m",
+    "cross_reference_artifact": "parent_esm2-8m_yamdxi1m.csv",
+    "cross_reference_artifact_sha256": "c253d3a1d4228e47b810ff95f13aaec337aa2f4fb1edf8fba0cc662b3c66fa75",
+    "projection": "six significant figures"
+  },
+  "generation_tool": "convert_esm2_8m_to_safetensors.py (Megure Labs internal)",
+  "generation_tool_version": "esm2-8m-weights-package-20260514",
+  "generation_date": "2026-05-14",
+  "notes": "Hikoboshi-ESM2-8M provenance for the embedded safetensors payload and the distinct hard-SW and soft-SW T=1 gap defaults. Source checkpoint: megure-labs-internal://checkpoints/hikoboshi-esm2-8m/final_model.pt (SHA-256 afa959cb694cfbe7358b06f5c04eb9c67e8c36f89e7b2518cb6e3f8832d0d9ce). Runtime safetensors blob length 29640016 bytes, data SHA-256 315bdd0d2fe7382afa9f84ea9048d7c5deb87d310d05bd84e020f0f5619a6dca. Hard-SW values come from the terminal near-zero-temperature anneal row; soft-SW values come from the T=1 checkpoint tensors. Excluded training-time tensors are listed in ignored_historical_tensors with reasons."
+}

@@ -1,0 +1,18 @@
+hikoboshi_io_sources = files(
+  'structure_loader.cpp',
+  'pdb_parser.cpp',
+  'mmcif_parser.cpp',
+  'structure_normalize.cpp',
+  'structure_atoms.cpp',
+  'atom_inference.cpp',
+  'atom_inference_kabsch.cpp',
+  'virtual_cb.cpp',
+  'residue_table.cpp',
+  'embedding_loader.cpp',
+  'design_fasta_writer.cpp',
+  'fasta_writer.cpp',
+  'pdb_writer.cpp',
+  'all_vs_all_layout.cpp',
+  'sanitized_id.cpp',
+  'structure_directory.cpp',
+)

@@ -1,0 +1,2 @@
+# Sequence demo TSVs keep an empty terminal pdb_path field as a trailing tab.
+demo/results/*.tsv whitespace=-blank-at-eol

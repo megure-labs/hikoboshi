@@ -1,0 +1,214 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native-cli:
+    name: Native CLI without CPython linkage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install native build tools
+        run: python -m pip install --no-cache-dir meson ninja
+
+      - name: Build and test the native-only profile
+        run: |
+          meson setup build-native -Dbuildtype=release -Dhikoboshi_python_api=false
+          meson compile -C build-native -j 2
+          meson test -C build-native --print-errorlogs --num-processes 2 \
+            --no-suite perf
+
+      - name: Verify the standalone CLI
+        shell: bash
+        run: |
+          ./build-native/hikoboshi --version
+          if ldd ./build-native/hikoboshi | grep -Eiq 'libpython|python[0-9]'; then
+            echo 'native Hikoboshi CLI unexpectedly links CPython' >&2
+            exit 1
+          fi
+
+  build-and-test:
+    name: Linux scalar build and tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install build tools
+        run: python -m pip install --no-cache-dir meson ninja numpy
+
+      - name: Configure and build
+        run: |
+          meson setup builddir -Dbuildtype=release -Dhikoboshi_python_api=true
+          meson compile -C builddir -j 2
+
+      - name: Test
+        run: >-
+          meson test -C builddir --print-errorlogs --num-processes 2
+          --no-suite perf
+
+  apple-silicon-cpu:
+    name: Apple Silicon / macOS 26 scalar build and tests
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Confirm the hosted runner is Apple Silicon
+        run: test "$(uname -m)" = "arm64"
+
+      - name: Install build tools
+        run: python -m pip install --no-cache-dir meson ninja numpy
+
+      - name: Configure and build the scalar implementation
+        run: |
+          meson setup builddir -Dbuildtype=release \
+            -Dhikoboshi_python_api=true \
+            -Dhikoboshi_backend_cuda=disabled \
+            -Dhikoboshi_backend_hip=disabled \
+            -Dhikoboshi_backend_metal=disabled \
+            -Dhikoboshi_backend_vulkan=disabled \
+            -Dhikoboshi_backend_opencl=disabled \
+            -Dhikoboshi_backend_simd=none
+          meson compile -C builddir -j 3
+
+      - name: Test the Apple Silicon scalar build
+        run: |
+          meson test -C builddir --print-errorlogs --num-processes 3 \
+            --no-suite perf
+          if otool -L ./builddir/hikoboshi | grep -Eiq 'Python|libpython'; then
+            echo 'native Hikoboshi CLI unexpectedly links CPython' >&2
+            exit 1
+          fi
+
+  release-policy:
+    name: Release policy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+
+      - name: Install policy test dependency
+        run: python -m pip install --no-cache-dir pytest
+
+      - name: Check public release surface
+        shell: bash
+        run: |
+          test -f AGENTS.md
+          test -L CLAUDE.md
+          test -f CONTRIBUTING.md
+          test -f LICENSE
+          test -f NOTICE
+          test -f PROVENANCE.md
+          test -f PROVENANCE_POLICY.md
+          test -f CLEAN_ROOM.md
+          test -f .provenance/change-provenance.schema.json
+          test -f tools/validate_change_provenance.py
+          test -f THIRD_PARTY_NOTICES.md
+          test -f SECURITY.md
+          test ! -e docs/work
+          test ! -e tests/harness
+          test ! -e python/hikoboshi/conserv
+          python tools/validate_change_provenance.py --help >/dev/null
+          python -m pytest -q tests/test_provenance_policy.py
+          python - <<'PY'
+          import re
+          import subprocess
+          import zipfile
+          from pathlib import Path
+
+          forbidden_literals = (
+              ''.join(('p', 'f', 'align')),
+              ''.join(('PF', 'align')),
+              ''.join(('PF', 'ALIGN')),
+              ''.join(('p', 'f', 'suite')),
+              ''.join(('d', '2p')),
+              ''.join(('D', '2P')),
+              ''.join(('ori', 'kata')),
+              ''.join(('Ori', 'kata')),
+          )
+          legacy_shorthand = re.compile(r'\b' + 'p' + 'f' + r'[a-zA-Z0-9_]*\b')
+          # Exact historical W&B project names are immutable provenance
+          # identifiers, not active product names or public API symbols.
+          historical_provenance_ids = (
+              ''.join(('p', 'f', 'align-esm2-8m-gaponly-stepwise-anneal')),
+          )
+          tracked = [Path(item) for item in subprocess.check_output(
+              ['git', 'ls-files', '-z']
+          ).decode().split('\0') if item]
+          problems = []
+          for path in tracked:
+              lower_path = path.as_posix().lower()
+              if any(term.lower() in lower_path for term in forbidden_literals):
+                  problems.append(f'legacy path: {path}')
+              if path.suffix == '.npz':
+                  with zipfile.ZipFile(path) as archive:
+                      for name in archive.namelist():
+                          if any(term.lower() in name.lower() for term in forbidden_literals):
+                              problems.append(f'legacy archive member: {path}:{name}')
+                  continue
+              if path.suffix == '.safetensors':
+                  continue
+              try:
+                  text = path.read_text(encoding='utf-8')
+              except UnicodeDecodeError:
+                  continue
+              scan_text = text
+              for identifier in historical_provenance_ids:
+                  scan_text = scan_text.replace(identifier, '')
+              if any(term in scan_text for term in forbidden_literals):
+                  problems.append(f'legacy text: {path}')
+              if legacy_shorthand.search(scan_text):
+                  problems.append(f'legacy shorthand: {path}')
+
+          oversized = [
+              path for path in Path('.').rglob('*')
+              if path.is_file() and '.git' not in path.parts
+              and path.stat().st_size >= 100_000_000
+          ]
+          if oversized:
+              raise SystemExit('files at or above GitHub limit: ' + ', '.join(map(str, oversized)))
+          if problems:
+              raise SystemExit('\n'.join(problems))
+          PY
+          git diff --check

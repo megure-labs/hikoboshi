@@ -1,0 +1,1864 @@
+{
+  "schema_version": "0.1.0",
+  "model_name": "proteinmpnn-v48-eps020",
+  "aliases": [
+    "v_48_020",
+    "Hikoboshi-ProteinMPNN-v48-020",
+    "proteinmpnn-v48-020",
+    "proteinmpnn"
+  ],
+  "license": "MIT",
+  "base_model": {
+    "name": "ProteinMPNN",
+    "identifier": "v_48_020",
+    "source": "https://github.com/dauparas/ProteinMPNN",
+    "authors": "Dauparas et al.; Baker lab",
+    "license": "MIT",
+    "derived_weights": "Hikoboshi conversion of upstream vanilla_model_weights/v_48_020.pt to float32 safetensors"
+  },
+  "model_family": "ProteinMPNN",
+  "model_version": "v_48_020",
+  "hidden_dim": 128,
+  "neighbor_count": 48,
+  "rbf_count": 16,
+  "rbf_feature_order": "atom_pair_distance_rbf",
+  "layer_count": 3,
+  "encoder_layer_count": 3,
+  "decoder_layer_count": 3,
+  "tensor_schema": "safetensors:proteinmpnn-v48-eps020-v1;runtime_tensors=118",
+  "message_scale": 30.0,
+  "architecture_kind": "mpnn_v1",
+  "architecture_params": {
+    "hidden_dimension": 128,
+    "neighbor_count": 48,
+    "rbf_count": 16,
+    "positional_embedding_count": 16,
+    "positional_input_dimension": 66,
+    "edge_feature_dimension": 416,
+    "encoder_layer_count": 3,
+    "decoder_layer_count": 3,
+    "message_scale": 30.0,
+    "decoder_update": "node_update_only",
+    "output": "inverse_folding_logits"
+  },
+  "dtype": "float32",
+  "tensors": [
+    {
+      "name": "features.embeddings.linear.weight",
+      "shape": [
+        16,
+        66
+      ],
+      "dtype": "float32",
+      "checksum": "65d027dc3d7c195529916c89e8ff191e051f7c812458626623405e43ccab41f9",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "features.embeddings.linear.weight",
+      "layout": "row_major",
+      "payload_offset": 6636692,
+      "payload_byte_length": 4224
+    },
+    {
+      "name": "features.embeddings.linear.bias",
+      "shape": [
+        16
+      ],
+      "dtype": "float32",
+      "checksum": "050324527a64580e5e979a133c27d94ba2e14600348ecedb010ee244dc3a97ef",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "features.embeddings.linear.bias",
+      "layout": "row_major",
+      "payload_offset": 6636628,
+      "payload_byte_length": 64
+    },
+    {
+      "name": "features.edge_embedding.weight",
+      "shape": [
+        128,
+        416
+      ],
+      "dtype": "float32",
+      "checksum": "4016c21e7c83fae37856604e517aa28a8a7367e6ca1f965065962af57fb24ff7",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "features.edge_embedding.weight",
+      "layout": "row_major",
+      "payload_offset": 6423636,
+      "payload_byte_length": 212992
+    },
+    {
+      "name": "features.norm_edges.weight",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "7b6a0d8dbf740533b365e942d5774bbb83d2f85c9217bd0c96f1bfdacd091189",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "features.norm_edges.weight",
+      "layout": "row_major",
+      "payload_offset": 6641428,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "features.norm_edges.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "d8056320bbdd5e60fe0b6865beda6451bb33064e1d4c9b28b5a8f63e54b282dd",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "features.norm_edges.bias",
+      "layout": "row_major",
+      "payload_offset": 6640916,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "W_e.weight",
+      "shape": [
+        128,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "3258a38d81d608518e2f7980129b8fcf3e1c24f35edede9d8cc86d158f4ec726",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "W_e.weight",
+      "layout": "row_major",
+      "payload_offset": 512,
+      "payload_byte_length": 65536
+    },
+    {
+      "name": "W_e.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "64dec33c7d79cf26cbca7b63d22d8cfbc3826a53353eca1bbb420510ddfe8c72",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "W_e.bias",
+      "layout": "row_major",
+      "payload_offset": 0,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "W_s.weight",
+      "shape": [
+        21,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "419b47e12874e74d472cd10ab844bda5d560ed3553441111b4f1440375ca8ebd",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "W_s.weight",
+      "layout": "row_major",
+      "payload_offset": 76884,
+      "payload_byte_length": 10752
+    },
+    {
+      "name": "encoder_layers.0.norm1.weight",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "c482578972130c16dc13114ada5f54f15cbd1d5d3369dd19ceafbef4e7b49b80",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.0.norm1.weight",
+      "layout": "row_major",
+      "payload_offset": 4044372,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.0.norm1.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "7e71783083b13fed789cb37d8f0e1504b70ff3b7a51b20240fac1044010dc292",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.0.norm1.bias",
+      "layout": "row_major",
+      "payload_offset": 4043860,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.0.norm2.weight",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "2b24141c56a4e4a40b2d7d8d1adde68299c5e4e4e1160adb8a3c1da6c7c627e4",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.0.norm2.weight",
+      "layout": "row_major",
+      "payload_offset": 4045396,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.0.norm2.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "472ed6ffb992064cf20025f188c310c1dd8f5115ddcd3ad1c3a8d9153fad406c",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.0.norm2.bias",
+      "layout": "row_major",
+      "payload_offset": 4044884,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.0.norm3.weight",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "0550a81e9f198dbbe2524738d7bb30b39787daf3503d848462a75347bfa02551",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.0.norm3.weight",
+      "layout": "row_major",
+      "payload_offset": 4046420,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.0.norm3.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "975f9b4b3c6a65ac1d1ea3b362b8501af1e88b94f6d37e3a7434319f3bbd1da1",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.0.norm3.bias",
+      "layout": "row_major",
+      "payload_offset": 4045908,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.0.W1.weight",
+      "shape": [
+        128,
+        384
+      ],
+      "dtype": "float32",
+      "checksum": "a9757d7aca5e55c43e9fc994e559c6d92704946d40c0f49555c6e2a91ad95519",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.0.W1.weight",
+      "layout": "row_major",
+      "payload_offset": 2859092,
+      "payload_byte_length": 196608
+    },
+    {
+      "name": "encoder_layers.0.W1.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "80ac64b62343b7fe8baa6e4dbf33c022349c98631d18b81497dbe6a3cf327176",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.0.W1.bias",
+      "layout": "row_major",
+      "payload_offset": 2858580,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.0.W2.weight",
+      "shape": [
+        128,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "7fa914c133af10142a6b06ad4d34bd2c50b506cf7e9a93fe5933b3492d9e9f38",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.0.W2.weight",
+      "layout": "row_major",
+      "payload_offset": 3385428,
+      "payload_byte_length": 65536
+    },
+    {
+      "name": "encoder_layers.0.W2.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "0fb8080278eff3124fd683d69edd40e8b25b5fe6ef890180261d714b77ecd677",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.0.W2.bias",
+      "layout": "row_major",
+      "payload_offset": 3384916,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.0.W3.weight",
+      "shape": [
+        128,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "94e5adff368a6ff1cab397b21cd3b132e80ed7d4760b5eb7a4ceefb49246ab3b",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.0.W3.weight",
+      "layout": "row_major",
+      "payload_offset": 3451476,
+      "payload_byte_length": 65536
+    },
+    {
+      "name": "encoder_layers.0.W3.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "2773c49503d553b40567b8ce0742104b0495d352b41db034aa2f793367744b92",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.0.W3.bias",
+      "layout": "row_major",
+      "payload_offset": 3450964,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.0.W11.weight",
+      "shape": [
+        128,
+        384
+      ],
+      "dtype": "float32",
+      "checksum": "dd00ccca8663144ea7de22ecf5b6c56d429237c095b0cd8d17eb3d711b8dbbff",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.0.W11.weight",
+      "layout": "row_major",
+      "payload_offset": 3056212,
+      "payload_byte_length": 196608
+    },
+    {
+      "name": "encoder_layers.0.W11.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "a499b6980d40765121843208659dd8c3e967d9e0ae63cc58638c65f70b3d3973",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.0.W11.bias",
+      "layout": "row_major",
+      "payload_offset": 3055700,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.0.W12.weight",
+      "shape": [
+        128,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "3b3cba9af09ce1a5327ffa567fba9ef93d06e684005e26cf1bd4548f8d53abd2",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.0.W12.weight",
+      "layout": "row_major",
+      "payload_offset": 3253332,
+      "payload_byte_length": 65536
+    },
+    {
+      "name": "encoder_layers.0.W12.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "ee9525c4a011e0d0129052a89bdfd7ea85dd1fc0f39ff20c1bbd00dd9eaafcd6",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.0.W12.bias",
+      "layout": "row_major",
+      "payload_offset": 3252820,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.0.W13.weight",
+      "shape": [
+        128,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "6c40d13a493a4649855d62f6053449670d05c70e7a523a09ef7559797c6664d2",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.0.W13.weight",
+      "layout": "row_major",
+      "payload_offset": 3319380,
+      "payload_byte_length": 65536
+    },
+    {
+      "name": "encoder_layers.0.W13.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "d85a371b849db87370923889caa67a1bc5f7d3de1d99aab456cea949dd7b6009",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.0.W13.bias",
+      "layout": "row_major",
+      "payload_offset": 3318868,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.0.dense.W_in.weight",
+      "shape": [
+        512,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "0aea6f865870120883473cbee1fe276d09a2018c8c21e1a0cc71a5e62e9a6ff6",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.0.dense.W_in.weight",
+      "layout": "row_major",
+      "payload_offset": 3519060,
+      "payload_byte_length": 262144
+    },
+    {
+      "name": "encoder_layers.0.dense.W_in.bias",
+      "shape": [
+        512
+      ],
+      "dtype": "float32",
+      "checksum": "e637148438a77ac631c8c3ea630f7493bf16be6d5a5b715fc96be6f5edc75fd8",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.0.dense.W_in.bias",
+      "layout": "row_major",
+      "payload_offset": 3517012,
+      "payload_byte_length": 2048
+    },
+    {
+      "name": "encoder_layers.0.dense.W_out.weight",
+      "shape": [
+        128,
+        512
+      ],
+      "dtype": "float32",
+      "checksum": "5bcd1570cc22064f034f0b8c2ad51cbf7e5c5971e52798b6e4674b23b122e7dd",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.0.dense.W_out.weight",
+      "layout": "row_major",
+      "payload_offset": 3781716,
+      "payload_byte_length": 262144
+    },
+    {
+      "name": "encoder_layers.0.dense.W_out.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "b05f3f93b93f2a7229eab086200e1373f5488d0579754fd3c9fff7c1ea5dffde",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.0.dense.W_out.bias",
+      "layout": "row_major",
+      "payload_offset": 3781204,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.1.norm1.weight",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "3fbe9cb2f112a9bf67d5308e9ad06064b14bad3fc31168e9362e978340055eb6",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.1.norm1.weight",
+      "layout": "row_major",
+      "payload_offset": 5232724,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.1.norm1.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "c9b5dd4631cf16351ca1e5694d8aa69028be241a7e431a36b817451acf28ccaa",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.1.norm1.bias",
+      "layout": "row_major",
+      "payload_offset": 5232212,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.1.norm2.weight",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "8e485b891872fb7a95e79a351486e063e82a9a6d738e9b64eee8f3c2e5e49857",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.1.norm2.weight",
+      "layout": "row_major",
+      "payload_offset": 5233748,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.1.norm2.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "7f25927417c353b24010c76fcf9e5866e4eb1b4e50bbe176e646d94934a50347",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.1.norm2.bias",
+      "layout": "row_major",
+      "payload_offset": 5233236,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.1.norm3.weight",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "1477031529ed4d4c401fb952f8a30a3e54fffe354f76a1b6db35ceeda1f93923",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.1.norm3.weight",
+      "layout": "row_major",
+      "payload_offset": 5234772,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.1.norm3.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "db73adec6f2d63fc638a50ee96933b6e8cc7648d5cbd73277ada1ee6841160e3",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.1.norm3.bias",
+      "layout": "row_major",
+      "payload_offset": 5234260,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.1.W1.weight",
+      "shape": [
+        128,
+        384
+      ],
+      "dtype": "float32",
+      "checksum": "bb4c2cec290f851abb927a3871d99946940af29233058f3066a712c77ea6d42f",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.1.W1.weight",
+      "layout": "row_major",
+      "payload_offset": 4047444,
+      "payload_byte_length": 196608
+    },
+    {
+      "name": "encoder_layers.1.W1.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "0a3b60e46fbf1777fab047ae96d0d17d42a0a3162a3e6b4ced4df7402108a997",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.1.W1.bias",
+      "layout": "row_major",
+      "payload_offset": 4046932,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.1.W2.weight",
+      "shape": [
+        128,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "0f0be1301c94c97d1eef732b02c28de0127c003ff5d8bd8a2011b9f6029d61c9",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.1.W2.weight",
+      "layout": "row_major",
+      "payload_offset": 4573780,
+      "payload_byte_length": 65536
+    },
+    {
+      "name": "encoder_layers.1.W2.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "6ef71de74cf03857d1b949414e5165a839dbafc864f7af0886c7f8b2f93b2828",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.1.W2.bias",
+      "layout": "row_major",
+      "payload_offset": 4573268,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.1.W3.weight",
+      "shape": [
+        128,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "58be6eff93c69e7ad7f93a3ea1bd59c3e19f188e72ad6fb95134a3a8bcc7f1dc",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.1.W3.weight",
+      "layout": "row_major",
+      "payload_offset": 4639828,
+      "payload_byte_length": 65536
+    },
+    {
+      "name": "encoder_layers.1.W3.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "5c6452ae8ea802631853e705ada056c96d0a8420da66bd2295586bd922a4debf",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.1.W3.bias",
+      "layout": "row_major",
+      "payload_offset": 4639316,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.1.W11.weight",
+      "shape": [
+        128,
+        384
+      ],
+      "dtype": "float32",
+      "checksum": "432d478d4232fbfc966e064fde8ac365a1ddff8c2291548c0fee720e604f2ccf",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.1.W11.weight",
+      "layout": "row_major",
+      "payload_offset": 4244564,
+      "payload_byte_length": 196608
+    },
+    {
+      "name": "encoder_layers.1.W11.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "399250ea1b1bd3639e3f28fd513097081aa733f18229122e85020307c323b689",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.1.W11.bias",
+      "layout": "row_major",
+      "payload_offset": 4244052,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.1.W12.weight",
+      "shape": [
+        128,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "2ec4b0cf7ef816fe71e98dc5b3db1233dd48d29d2153332eb89638ad3ed50b03",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.1.W12.weight",
+      "layout": "row_major",
+      "payload_offset": 4441684,
+      "payload_byte_length": 65536
+    },
+    {
+      "name": "encoder_layers.1.W12.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "518f03f47e88279f2ef83e548911283df03fd908bbd6b6df432b0bedcb4efc75",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.1.W12.bias",
+      "layout": "row_major",
+      "payload_offset": 4441172,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.1.W13.weight",
+      "shape": [
+        128,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "9e23ef8f5fb6154916af47a364a612491694dacf974f007222e74dd4daea3336",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.1.W13.weight",
+      "layout": "row_major",
+      "payload_offset": 4507732,
+      "payload_byte_length": 65536
+    },
+    {
+      "name": "encoder_layers.1.W13.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "e232e90a14476a3cf02b3b9c11a2db4fb1051e02e477966ae558fc3b642bbb9f",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.1.W13.bias",
+      "layout": "row_major",
+      "payload_offset": 4507220,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.1.dense.W_in.weight",
+      "shape": [
+        512,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "a0cfd82d0d9fb291a7856b23dfec0737172b29a9f13c3acc75b5082bdf37afaf",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.1.dense.W_in.weight",
+      "layout": "row_major",
+      "payload_offset": 4707412,
+      "payload_byte_length": 262144
+    },
+    {
+      "name": "encoder_layers.1.dense.W_in.bias",
+      "shape": [
+        512
+      ],
+      "dtype": "float32",
+      "checksum": "8f95f84c746df7a22cde99f589e460507a79f4fcbba73cd3c21b99d09f33b05c",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.1.dense.W_in.bias",
+      "layout": "row_major",
+      "payload_offset": 4705364,
+      "payload_byte_length": 2048
+    },
+    {
+      "name": "encoder_layers.1.dense.W_out.weight",
+      "shape": [
+        128,
+        512
+      ],
+      "dtype": "float32",
+      "checksum": "c8d4a50546d00dbba29955a6df4487b1a5fda09b507bb220bc5d9fd21ae3917d",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.1.dense.W_out.weight",
+      "layout": "row_major",
+      "payload_offset": 4970068,
+      "payload_byte_length": 262144
+    },
+    {
+      "name": "encoder_layers.1.dense.W_out.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "6e9ceb62c13042c9f507c00f28dc3751a59e4e0eb80b2df73694bd399880649b",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.1.dense.W_out.bias",
+      "layout": "row_major",
+      "payload_offset": 4969556,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.2.norm1.weight",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "87e1134fcd496a74a39e731f20cef4d3bcbac648315a8fe7f4ac43c6a3524e5d",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.2.norm1.weight",
+      "layout": "row_major",
+      "payload_offset": 6421076,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.2.norm1.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "b01c471841f8e3127300f99af021b6a96f39d5f603f70ad862dc83bca57f370c",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.2.norm1.bias",
+      "layout": "row_major",
+      "payload_offset": 6420564,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.2.norm2.weight",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "70d5d717110d9e64a0a321b2c2bda33d4af0fc315a0c0beaf09ef9b2d46a0c9e",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.2.norm2.weight",
+      "layout": "row_major",
+      "payload_offset": 6422100,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.2.norm2.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "636eacc2ea39ba64f226219999c31f8017574f8691fb1af904d6e90662d8e44c",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.2.norm2.bias",
+      "layout": "row_major",
+      "payload_offset": 6421588,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.2.norm3.weight",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "8f583e2d6ba86a7dbfe4bd9e06c87ca3074be0ebb9127dda6be7858f95fecb17",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.2.norm3.weight",
+      "layout": "row_major",
+      "payload_offset": 6423124,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.2.norm3.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "43a5b03ffa37ee768d2627e284a41c366de8d1f079d0f123357a9c77dc32ec3a",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.2.norm3.bias",
+      "layout": "row_major",
+      "payload_offset": 6422612,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.2.W1.weight",
+      "shape": [
+        128,
+        384
+      ],
+      "dtype": "float32",
+      "checksum": "f1c2d7ed05c72aa1a44847da73c10203fae39c86c183e718c023e5cfa6867cae",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.2.W1.weight",
+      "layout": "row_major",
+      "payload_offset": 5235796,
+      "payload_byte_length": 196608
+    },
+    {
+      "name": "encoder_layers.2.W1.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "18c539bd9628c36646d0f3113864b18986dddb42a81f4fa8d296358969e8ca91",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.2.W1.bias",
+      "layout": "row_major",
+      "payload_offset": 5235284,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.2.W2.weight",
+      "shape": [
+        128,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "3099027e07da4d7d8911a7993455fba9484595a6f20497d189798ac7edeecb09",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.2.W2.weight",
+      "layout": "row_major",
+      "payload_offset": 5762132,
+      "payload_byte_length": 65536
+    },
+    {
+      "name": "encoder_layers.2.W2.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "5fc52d0f8fcf9e1c222d3a719e513233c7c9ddd9a3904a853636116577bccc9e",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.2.W2.bias",
+      "layout": "row_major",
+      "payload_offset": 5761620,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.2.W3.weight",
+      "shape": [
+        128,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "7d47153fa4bd47d47be9fc55d0a4091b26b2dc865d4100085121a9cb423b879f",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.2.W3.weight",
+      "layout": "row_major",
+      "payload_offset": 5828180,
+      "payload_byte_length": 65536
+    },
+    {
+      "name": "encoder_layers.2.W3.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "3e8149e7ba543907b6232ad1d28f642c136786d26283a92a9db8a56e7d0e7132",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.2.W3.bias",
+      "layout": "row_major",
+      "payload_offset": 5827668,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.2.W11.weight",
+      "shape": [
+        128,
+        384
+      ],
+      "dtype": "float32",
+      "checksum": "602f1e001499e7716cc6a552808edc1a980b276a62ced42f5c21e0efd09d8544",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.2.W11.weight",
+      "layout": "row_major",
+      "payload_offset": 5432916,
+      "payload_byte_length": 196608
+    },
+    {
+      "name": "encoder_layers.2.W11.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "485163845ecd7e46f86552089d8525dd1ea534b1ffb74f19e913d59a830c2a2a",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.2.W11.bias",
+      "layout": "row_major",
+      "payload_offset": 5432404,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.2.W12.weight",
+      "shape": [
+        128,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "ce05bdffcdde3395a9fe211b897c6baaa578fed5056bd8cda0c81100a1169c0c",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.2.W12.weight",
+      "layout": "row_major",
+      "payload_offset": 5630036,
+      "payload_byte_length": 65536
+    },
+    {
+      "name": "encoder_layers.2.W12.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "5c933655b57e31055e2b2de55798a4f8627f07adfa985031c21ef061c2584099",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.2.W12.bias",
+      "layout": "row_major",
+      "payload_offset": 5629524,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.2.W13.weight",
+      "shape": [
+        128,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "23961ea5408cdce4d8d6f7a2b3e13e8b110aaede95a160f025e8cbce93b957e2",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.2.W13.weight",
+      "layout": "row_major",
+      "payload_offset": 5696084,
+      "payload_byte_length": 65536
+    },
+    {
+      "name": "encoder_layers.2.W13.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "7b583eab784143f821e438a901b4644f24f1810bd13ecd661a24387e008810e7",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.2.W13.bias",
+      "layout": "row_major",
+      "payload_offset": 5695572,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "encoder_layers.2.dense.W_in.weight",
+      "shape": [
+        512,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "9de372c8ff58a90860f35455cf75a69c10ebb7558f9ec5188b948b35c6ff1a75",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.2.dense.W_in.weight",
+      "layout": "row_major",
+      "payload_offset": 5895764,
+      "payload_byte_length": 262144
+    },
+    {
+      "name": "encoder_layers.2.dense.W_in.bias",
+      "shape": [
+        512
+      ],
+      "dtype": "float32",
+      "checksum": "4942ef011d8dfe0b263d6b7e34ccccb77fd77ad04b667a352126a2e12cc9e1a9",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.2.dense.W_in.bias",
+      "layout": "row_major",
+      "payload_offset": 5893716,
+      "payload_byte_length": 2048
+    },
+    {
+      "name": "encoder_layers.2.dense.W_out.weight",
+      "shape": [
+        128,
+        512
+      ],
+      "dtype": "float32",
+      "checksum": "242bd83f28017f71090063cb519bf1cae010839419af1baecbbc45ce1d061c0d",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.2.dense.W_out.weight",
+      "layout": "row_major",
+      "payload_offset": 6158420,
+      "payload_byte_length": 262144
+    },
+    {
+      "name": "encoder_layers.2.dense.W_out.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "1a7bac5fc0ebd62ce51396d0cc3e92f35f8b592f8352df693f74511873e71054",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "encoder_layers.2.dense.W_out.bias",
+      "layout": "row_major",
+      "payload_offset": 6157908,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.0.norm1.weight",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "982024cb02329064987935c9911c98c4325fe1679bd611383c0b08b20f247e96",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.0.norm1.weight",
+      "layout": "row_major",
+      "payload_offset": 1009748,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.0.norm1.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "f82494e3ca4bc72a9d0a9f86eb7042ffc262683979803ee5ad2e086d5ffb7a10",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.0.norm1.bias",
+      "layout": "row_major",
+      "payload_offset": 1009236,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.0.norm2.weight",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "097979b4b1c3589a6aabef4420976cc0df1eeba7414ec5e432e11e923f44b7b0",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.0.norm2.weight",
+      "layout": "row_major",
+      "payload_offset": 1010772,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.0.norm2.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "4879b24bf7d858dc3402af35a112ebd38859c0da166f39ab11942b58f07a617c",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.0.norm2.bias",
+      "layout": "row_major",
+      "payload_offset": 1010260,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.0.W1.weight",
+      "shape": [
+        128,
+        512
+      ],
+      "dtype": "float32",
+      "checksum": "3416982523cb1f5bb15f7d2b0a56ae6c923c6b3ad2983b719a2ee258775e908b",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.0.W1.weight",
+      "layout": "row_major",
+      "payload_offset": 88148,
+      "payload_byte_length": 262144
+    },
+    {
+      "name": "decoder_layers.0.W1.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "eb9b5f71fbe664eaa45052c542fe34ce2f6f9d17a7d64d851e3a018e387136ec",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.0.W1.bias",
+      "layout": "row_major",
+      "payload_offset": 87636,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.0.W2.weight",
+      "shape": [
+        128,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "1cf72744343b3fb10d5266cf3dfb758e75be85c9d8f12a8012bdbd8b6377bea6",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.0.W2.weight",
+      "layout": "row_major",
+      "payload_offset": 350804,
+      "payload_byte_length": 65536
+    },
+    {
+      "name": "decoder_layers.0.W2.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "f4e1c875b95be802dfa6791c8d8a74c196f9bc03300aff73c471be5cb7a8332e",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.0.W2.bias",
+      "layout": "row_major",
+      "payload_offset": 350292,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.0.W3.weight",
+      "shape": [
+        128,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "692a191f6d23f713060b027040e03292024f3c25726966ea66303f769975069a",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.0.W3.weight",
+      "layout": "row_major",
+      "payload_offset": 416852,
+      "payload_byte_length": 65536
+    },
+    {
+      "name": "decoder_layers.0.W3.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "f9e5b04ef488079b400af31851073095fd2bd63601f472d35c9cda5d77260d20",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.0.W3.bias",
+      "layout": "row_major",
+      "payload_offset": 416340,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.0.dense.W_in.weight",
+      "shape": [
+        512,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "74f34f32d561b6c57901970da96c29d48e4dccd97d0fbc6a553273197b1d9f87",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.0.dense.W_in.weight",
+      "layout": "row_major",
+      "payload_offset": 484436,
+      "payload_byte_length": 262144
+    },
+    {
+      "name": "decoder_layers.0.dense.W_in.bias",
+      "shape": [
+        512
+      ],
+      "dtype": "float32",
+      "checksum": "9d33b73603e747e62d4275deba81e475ee42b1963b08eb1fd91bc4473222e8ed",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.0.dense.W_in.bias",
+      "layout": "row_major",
+      "payload_offset": 482388,
+      "payload_byte_length": 2048
+    },
+    {
+      "name": "decoder_layers.0.dense.W_out.weight",
+      "shape": [
+        128,
+        512
+      ],
+      "dtype": "float32",
+      "checksum": "7985b954bbe91257242487577d7381d0956f550fcdac971f8f022173d1775daf",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.0.dense.W_out.weight",
+      "layout": "row_major",
+      "payload_offset": 747092,
+      "payload_byte_length": 262144
+    },
+    {
+      "name": "decoder_layers.0.dense.W_out.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "818d164459440260533428d8e3ee3ef5135094b23f06f0147c0d23362fe2d638",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.0.dense.W_out.bias",
+      "layout": "row_major",
+      "payload_offset": 746580,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.1.norm1.weight",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "1e008bedd431d36bd1b9d3f76df0f5423d2e82aadf10415eb880b2804ea9bac6",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.1.norm1.weight",
+      "layout": "row_major",
+      "payload_offset": 1933396,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.1.norm1.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "b0aa1f5eb85e4d5ca1237ecc5d8eb9712d2e6372fff10bfc0e3720ae765176bb",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.1.norm1.bias",
+      "layout": "row_major",
+      "payload_offset": 1932884,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.1.norm2.weight",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "5938d1c744623c229782e6d1859ec636f3a5933f7d44d4bf6f5ffe649dbc9b4e",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.1.norm2.weight",
+      "layout": "row_major",
+      "payload_offset": 1934420,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.1.norm2.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "98038445ac02bd9eff0b617b516f33154d0407659689e8df94158c0b84dd205b",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.1.norm2.bias",
+      "layout": "row_major",
+      "payload_offset": 1933908,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.1.W1.weight",
+      "shape": [
+        128,
+        512
+      ],
+      "dtype": "float32",
+      "checksum": "c6ae54db65849b94efb0263544d903d8945a3c191e12ed84dbd555c49cff9e0c",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.1.W1.weight",
+      "layout": "row_major",
+      "payload_offset": 1011796,
+      "payload_byte_length": 262144
+    },
+    {
+      "name": "decoder_layers.1.W1.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "cb6f982c55696098ca2cebbe456fdaa6d18ae45f4fbe41414629384201c4a26b",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.1.W1.bias",
+      "layout": "row_major",
+      "payload_offset": 1011284,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.1.W2.weight",
+      "shape": [
+        128,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "11043b23b3b9b2c2e1c62ec5a2b5cb2b68b9d875bb6f21aabccd62aea4871f02",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.1.W2.weight",
+      "layout": "row_major",
+      "payload_offset": 1274452,
+      "payload_byte_length": 65536
+    },
+    {
+      "name": "decoder_layers.1.W2.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "f7fde1ffaeeb401f481a5fe72737a24e08c7fc8e0263440bd8704d8f8a5fa603",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.1.W2.bias",
+      "layout": "row_major",
+      "payload_offset": 1273940,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.1.W3.weight",
+      "shape": [
+        128,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "e96d5c6e399ac40266ffaf1d1a9d48ea4620a5d8abf72e3fbd512ed23e496e0f",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.1.W3.weight",
+      "layout": "row_major",
+      "payload_offset": 1340500,
+      "payload_byte_length": 65536
+    },
+    {
+      "name": "decoder_layers.1.W3.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "fb67e157a961407f70c2c5d922978f138d514daafa78c59c230665df675142c2",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.1.W3.bias",
+      "layout": "row_major",
+      "payload_offset": 1339988,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.1.dense.W_in.weight",
+      "shape": [
+        512,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "625cd057715d56a066bfd4737e7066049a2625ae82d1eb05b1001e05c9a77a80",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.1.dense.W_in.weight",
+      "layout": "row_major",
+      "payload_offset": 1408084,
+      "payload_byte_length": 262144
+    },
+    {
+      "name": "decoder_layers.1.dense.W_in.bias",
+      "shape": [
+        512
+      ],
+      "dtype": "float32",
+      "checksum": "d24fac6f5791455eedff750bf7367823ea438f208dcd061e5e300a61f1473d4b",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.1.dense.W_in.bias",
+      "layout": "row_major",
+      "payload_offset": 1406036,
+      "payload_byte_length": 2048
+    },
+    {
+      "name": "decoder_layers.1.dense.W_out.weight",
+      "shape": [
+        128,
+        512
+      ],
+      "dtype": "float32",
+      "checksum": "c71702d8324a0d9a42ccf1b0b1b9f4a6d730bcf9c982580be3dadb852db90436",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.1.dense.W_out.weight",
+      "layout": "row_major",
+      "payload_offset": 1670740,
+      "payload_byte_length": 262144
+    },
+    {
+      "name": "decoder_layers.1.dense.W_out.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "50c75a028c539f16d0d5a4a0b95ae40bea5703682156c9a210bc18ccceba827a",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.1.dense.W_out.bias",
+      "layout": "row_major",
+      "payload_offset": 1670228,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.2.norm1.weight",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "b92df0eb649b9f3c0eb9f50209e73c35fa36a6d7448eb223076a54787c38975a",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.2.norm1.weight",
+      "layout": "row_major",
+      "payload_offset": 2857044,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.2.norm1.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "129196c625a7c22d00f01b4f231944ae115cfd981a71dc5390536f61cac10a02",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.2.norm1.bias",
+      "layout": "row_major",
+      "payload_offset": 2856532,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.2.norm2.weight",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "81021569feabaadf47a61d6f5ccf3cb5afbbee552e997567d64efb597bc3f7a8",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.2.norm2.weight",
+      "layout": "row_major",
+      "payload_offset": 2858068,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.2.norm2.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "4b99da6c0ebafd7f82dba08e6550c58f589a0a62590a7da3490f218bcdbede4e",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.2.norm2.bias",
+      "layout": "row_major",
+      "payload_offset": 2857556,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.2.W1.weight",
+      "shape": [
+        128,
+        512
+      ],
+      "dtype": "float32",
+      "checksum": "b8aad88f52a1b441ec00ef999a2feee9498e783218265e45d0222ef9a0b0ec28",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.2.W1.weight",
+      "layout": "row_major",
+      "payload_offset": 1935444,
+      "payload_byte_length": 262144
+    },
+    {
+      "name": "decoder_layers.2.W1.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "45c0e5aa259419c9741e8340e2217fa0d51b452cf33c827016ac253c8dd50b8b",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.2.W1.bias",
+      "layout": "row_major",
+      "payload_offset": 1934932,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.2.W2.weight",
+      "shape": [
+        128,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "1e449b5f18d9449dc8c016d49c26e5fba741fcbd77cd59431c70e0817123b3bb",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.2.W2.weight",
+      "layout": "row_major",
+      "payload_offset": 2198100,
+      "payload_byte_length": 65536
+    },
+    {
+      "name": "decoder_layers.2.W2.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "731453052d8da7a5173e585af82763fea1db5f20bd6a3e58dda45d9cc846a7c1",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.2.W2.bias",
+      "layout": "row_major",
+      "payload_offset": 2197588,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.2.W3.weight",
+      "shape": [
+        128,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "5046f1aa16051f2afbb53c8b637d6781b6acf04ff7b9097d63e33969cc825764",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.2.W3.weight",
+      "layout": "row_major",
+      "payload_offset": 2264148,
+      "payload_byte_length": 65536
+    },
+    {
+      "name": "decoder_layers.2.W3.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "3558a9bc1d3b1dc8ea6ad71a6f7774fc46718db54da9451342d3f69e7a282acd",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.2.W3.bias",
+      "layout": "row_major",
+      "payload_offset": 2263636,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "decoder_layers.2.dense.W_in.weight",
+      "shape": [
+        512,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "cd0566b1bd4e498efbe0c69251eb8860bbf9a44b8b047da3ecb1cc682c7cc393",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.2.dense.W_in.weight",
+      "layout": "row_major",
+      "payload_offset": 2331732,
+      "payload_byte_length": 262144
+    },
+    {
+      "name": "decoder_layers.2.dense.W_in.bias",
+      "shape": [
+        512
+      ],
+      "dtype": "float32",
+      "checksum": "2fb1f2857491d8c7da32e98064a1e3acfc2aef8402cb61964edcc93d2cfcc450",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.2.dense.W_in.bias",
+      "layout": "row_major",
+      "payload_offset": 2329684,
+      "payload_byte_length": 2048
+    },
+    {
+      "name": "decoder_layers.2.dense.W_out.weight",
+      "shape": [
+        128,
+        512
+      ],
+      "dtype": "float32",
+      "checksum": "d08ba37193ace54c5e586f217713a18ef9648d043587ef9e7bc1c6665126fc42",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.2.dense.W_out.weight",
+      "layout": "row_major",
+      "payload_offset": 2594388,
+      "payload_byte_length": 262144
+    },
+    {
+      "name": "decoder_layers.2.dense.W_out.bias",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "749364bf4a0c42f9f72d697fb3cff7b9a56ee208d1a5f75729e0205fe9cdece2",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "decoder_layers.2.dense.W_out.bias",
+      "layout": "row_major",
+      "payload_offset": 2593876,
+      "payload_byte_length": 512
+    },
+    {
+      "name": "W_out.weight",
+      "shape": [
+        21,
+        128
+      ],
+      "dtype": "float32",
+      "checksum": "35b0b42d053562b26de5b8d76ad8e9cc6ca3ecd1e7c51731105ad7de603f00e2",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "W_out.weight",
+      "layout": "row_major",
+      "payload_offset": 66132,
+      "payload_byte_length": 10752
+    },
+    {
+      "name": "W_out.bias",
+      "shape": [
+        21
+      ],
+      "dtype": "float32",
+      "checksum": "5474231da5c600ca696b0c0d88b9ff179e0a106d5d93625fc3e7aee9daf2618a",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "W_out.bias",
+      "layout": "row_major",
+      "payload_offset": 66048,
+      "payload_byte_length": 84
+    }
+  ],
+  "byte_length": 6653068,
+  "archived_tensor_count": 118,
+  "runtime_tensor_count": 118,
+  "safetensors_header_length": 11120,
+  "safetensors_data_offset": 11128,
+  "safetensors_data_length": 6641940,
+  "safetensors_data_sha256": "361cfe8ebe111bbfd3e006bcd57acd0acb318b3abe1583f92623607a02f6d649",
+  "checksum": "342b52ae248f2b70b2059313bab5ae7a358cbabac940072f71f5907eeaa21536",
+  "checksum_algorithm": "sha256",
+  "source_checkpoint": "external/ProteinMPNN/vanilla_model_weights/v_48_020.pt",
+  "source_checkpoint_checksum": "c9cb4a671d79604111231f8dbfc7c590e06f1197453b7a6854ac6661a642f5bd",
+  "generation_tool": "convert_proteinmpnn_v48_020_to_safetensors.py (Megure Labs internal)",
+  "generation_tool_version": "mpnn-01-weights-v48-020-20260630",
+  "generation_date": "2026-06-30",
+  "gap_parameter_family": "n/a inverse-folding",
+  "gap_open": 0.0,
+  "gap_ext": 0.0,
+  "soft_gap_parameter_family": "n/a inverse-folding",
+  "soft_gap_open": 0.0,
+  "soft_gap_ext": 0.0,
+  "calibrated_for_score_method": "n/a inverse-folding",
+  "similarity": "n/a inverse-folding",
+  "validation_status": "checksum-verified; per-tensor SHA-256 recorded; release_certified=true; mpnn-05 baked ProteinMPNN v_48_020 parity passed",
+  "provenance_status": "vanilla ProteinMPNN v_48_020 checkpoint converted to float32 safetensors; no tensor reordering inside individual tensors; validated against baked upstream v_48_020 parity goldens",
+  "notes": "ProteinMPNN inverse-folding package. Gap fields are explicit schema-required non-aligner sentinels (0.0, n/a inverse-folding), not Hikoboshi hard-SW defaults. Decoder layers are node-update-only and intentionally have no W11/W12/W13/norm3 tensors.",
+  "compiled_package_descriptor": {
+    "package": {
+      "package_schema_version": "0.1.0",
+      "package_id": "proteinmpnn-v48-eps020",
+      "aliases": [
+        "v_48_020",
+        "Hikoboshi-ProteinMPNN-v48-020",
+        "proteinmpnn-v48-020",
+        "proteinmpnn"
+      ],
+      "package_family": "ProteinMPNN",
+      "package_version": "v_48_020",
+      "package_kind": "graph_ir",
+      "implementation_compatibility": {
+        "hikoboshi_min": "0.1.0",
+        "hikoboshi_max_exclusive": "0.2.0"
+      }
+    },
+    "execution": {
+      "execution_mode": "graph_ir",
+      "architecture_id": "proteinmpnn_v48_eps020",
+      "builder_status": "pending-forward-packets",
+      "backend_requirements": [
+        "cpu.scalar"
+      ]
+    },
+    "storage": {
+      "storage_kind": "embedded",
+      "storage_format": "compiled_safetensors_blob",
+      "storage_layout": "large_payload_in_generated_cpp",
+      "embedded_symbol": "hikoboshi::weights::generated::proteinmpnn_v48_eps020::kSafetensorsBlob",
+      "generated_header": "cpp/weights/generated/proteinmpnn_v48_eps020_blob.hpp",
+      "generated_translation_unit": "cpp/weights/generated/proteinmpnn_v48_eps020_blob.cpp",
+      "payload_status": "embedded"
+    },
+    "capabilities": {
+      "input_routes": [
+        "coords_backbone",
+        "structure_backbone_atoms"
+      ],
+      "preprocessing": [
+        "atom_inference",
+        "virtual_cb",
+        "ca_knn",
+        "atom_pair_distances",
+        "rbf_expand",
+        "positional_encoding"
+      ],
+      "output_kinds": [
+        "inverse_folding_logits"
+      ],
+      "dtypes": [
+        "float32"
+      ],
+      "layouts": [
+        "row_major"
+      ],
+      "backends": [
+        "cpu.scalar"
+      ]
+    },
+    "gaps": {
+      "gap_family": "n/a inverse-folding",
+      "gap_model": "affine",
+      "gap_open": 0.0,
+      "gap_ext": 0.0,
+      "convention": "gap_open_plus_k_minus_1_gap_ext",
+      "calibrated_for_score_method": "n/a inverse-folding",
+      "calibration_status": "not an aligner"
+    },
+    "soft_gaps": {
+      "gap_family": "n/a inverse-folding",
+      "gap_model": "affine",
+      "gap_open": 0.0,
+      "gap_ext": 0.0,
+      "convention": "gap_open_plus_k_minus_1_gap_ext",
+      "calibrated_for_score_method": "n/a inverse-folding",
+      "calibration_status": "not an aligner"
+    },
+    "provenance": {
+      "source_artifact": "external/ProteinMPNN/vanilla_model_weights/v_48_020.pt",
+      "source_artifact_checksum": "c9cb4a671d79604111231f8dbfc7c590e06f1197453b7a6854ac6661a642f5bd",
+      "source_artifact_checksum_algorithm": "sha256",
+      "generation_tool": "convert_proteinmpnn_v48_020_to_safetensors.py (Megure Labs internal)",
+      "generation_tool_version": "mpnn-01-weights-v48-020-20260630",
+      "generation_date": "2026-06-30",
+      "validation_status": "checksum-verified; per-tensor SHA-256 recorded; release_certified=true; mpnn-05 baked ProteinMPNN v_48_020 parity passed",
+      "notes": "Runtime payload: 118 tensors (6653068 bytes embedded, data offset 11128, data length 6641940). Source checkpoint is the upstream vanilla ProteinMPNN v_48_020.pt."
+    },
+    "checksums": {
+      "payload_sha256": "342b52ae248f2b70b2059313bab5ae7a358cbabac940072f71f5907eeaa21536",
+      "safetensors_data_sha256": "361cfe8ebe111bbfd3e006bcd57acd0acb318b3abe1583f92623607a02f6d649",
+      "source_artifact_sha256": "c9cb4a671d79604111231f8dbfc7c590e06f1197453b7a6854ac6661a642f5bd",
+      "tensor_checksum_algorithm": "sha256"
+    }
+  }
+}

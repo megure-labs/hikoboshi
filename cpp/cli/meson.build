@@ -1,0 +1,15 @@
+hikoboshi_cli_sources = files(
+  'main.cpp',
+  'options.cpp',
+  'exit_codes.cpp',
+  'render.cpp',
+  'weights_resolution.cpp',
+  'commands/encode.cpp',
+  'commands/pairwise.cpp',
+  'commands/pair_list.cpp',
+  'commands/all_vs_all.cpp',
+  'commands/design.cpp',
+  'commands/score_alignment.cpp',
+  'commands/info.cpp',
+  'commands/version.cpp',
+)

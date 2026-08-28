@@ -1,0 +1,8 @@
+Hikoboshi: One native suite for search, alignment, MSA, and the rest of bioinformatics
+Copyright 2026 Megure Labs
+
+This product includes software developed by Casey Mogilevsky.
+
+This distribution includes model artifacts derived from ESM-2 and
+ProteinMPNN, and structure data from the Protein Data Bank. See
+THIRD_PARTY_NOTICES.md for their terms and attribution.

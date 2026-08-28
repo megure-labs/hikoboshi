@@ -1,0 +1,1588 @@
+{
+  "schema_version": "0.1.0",
+  "model_name": "hikoboshi-esm2-8m",
+  "aliases": [
+    "esm2-8m",
+    "esm2_8m",
+    "Hikoboshi-ESM2-8M"
+  ],
+  "license": "MIT",
+  "base_model": {
+    "name": "Meta/FAIR ESM2",
+    "identifier": "facebook/esm2_t6_8M_UR50D",
+    "source": "https://github.com/facebookresearch/esm",
+    "license": "MIT",
+    "derived_weights": "Hikoboshi/Megure joint MLM+alignment fine-tuned checkpoint afa959cb694cfbe7358b06f5c04eb9c67e8c36f89e7b2518cb6e3f8832d0d9ce"
+  },
+  "model_family": "Hikoboshi-ESM2",
+  "model_version": "afa959cb694cfbe7",
+  "hidden_dim": 320,
+  "architecture_kind": "plm_v1",
+  "architecture_params": {
+    "hidden_dimension": 320,
+    "attention_layer_count": 6,
+    "attention_head_count": 20,
+    "ffn_hidden_dim": 1280,
+    "vocab_size": 29,
+    "max_sequence_length": 65536,
+    "positional_kind": "rotary",
+    "norm_kind": "layer_norm",
+    "activation": "gelu",
+    "attention_kind": "rotary_multi_head_scaled_dot_product"
+  },
+  "tokenizer": {
+    "vocab_size": 29,
+    "table_source": "megure_esm2_29_token_layout",
+    "table_notes": "Slots 0-19 are canonical amino acids in Casey's training order (A,R,N,D,C,Q,E,G,H,I,L,K,M,F,P,S,T,W,Y,V); slots 20-24 are the non-standard residues (B,U,Z,O,X); slots 25-28 are the special tokens PAD=25, CLS/BOS=26, EOS=27, MASK=28. The four FAIR-only tokens (<unk>, ., -, <null_1>) are dropped — see hikoboshi_train/esm2_encoder.py:_LOCAL_TO_FAIR_TOKEN_MAP."
+  },
+  "dtype": "float32",
+  "tensors": [
+    {
+      "name": "embedding_table",
+      "shape": [
+        29,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "686fc7434fb3c5f5459013dc0521c3bca7c451fd1f6f0bb68dad6485100c77e3",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "embedding_table",
+      "layout": "row_major",
+      "payload_offset": 0,
+      "payload_byte_length": 37120
+    },
+    {
+      "name": "final_norm.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "e1ac2397485287673738c359e7fefff872f8920acf9a0d3c2195746f97f5c5e6",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "final_norm.bias",
+      "layout": "row_major",
+      "payload_offset": 37120,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "final_norm.weight",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "58a3adfd87a6bb5f9326e043b63528538c6f9ec8f7ce808483669120316c6bee",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "final_norm.weight",
+      "layout": "row_major",
+      "payload_offset": 38400,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.0.attn.k_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "c2814dc8345df07f6d09df64ff8218b318c7e1f1334ccb163496301dc73f22bf",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.0.attn.k_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 39680,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.0.attn.k_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "e74906c59cc8606edd8e8f50739281b62094ab31625e03db2cae8958b481fd89",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.0.attn.k_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 40960,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.0.attn.out_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "323db1436b6532e2300c26a2f7a0e5fa86cf2be6157e53b22fddde2f7c419c0b",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.0.attn.out_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 450560,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.0.attn.out_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "5dccd001e775f814ae496c20f65c3d6442e04dd8ffb44e9768b6adbbe325ec81",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.0.attn.out_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 451840,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.0.attn.pre_norm.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "3887e9b333fd783c974844b2ce4c58fa061e439d7b79d9aa0f61bc45a84c1aa6",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.0.attn.pre_norm.bias",
+      "layout": "row_major",
+      "payload_offset": 861440,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.0.attn.pre_norm.weight",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "6df22b063a4bfd40f1c9ceef397ac68ed822c695fdbe36434a51fe62d97bd122",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.0.attn.pre_norm.weight",
+      "layout": "row_major",
+      "payload_offset": 862720,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.0.attn.q_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "03329d426c01be4172a811aaf401619f8614d2ef578eba449829a00db8767282",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.0.attn.q_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 864000,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.0.attn.q_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "b54e710f1e1838141eb81835f5bec0bd60c90af8a30fe57eb9feb261e483cf9c",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.0.attn.q_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 865280,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.0.attn.v_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "8d1f4e3c636d7d77278367c582107a468fe119bfd5d8860abfdc9459a77ebc6f",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.0.attn.v_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 1274880,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.0.attn.v_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "abd8d82a9fac20b3059016366e3e8b2641c1276dd05fca5aee7a4f067a1449fe",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.0.attn.v_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 1276160,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.0.ffn.in.bias",
+      "shape": [
+        1280
+      ],
+      "dtype": "float32",
+      "checksum": "f2e9f6d47818fd12ca11da4cd52e8251946ffc09c6e2b4b8fb9bdd18f59433f6",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.0.ffn.in.bias",
+      "layout": "row_major",
+      "payload_offset": 1685760,
+      "payload_byte_length": 5120
+    },
+    {
+      "name": "layers.0.ffn.in.weight",
+      "shape": [
+        1280,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "b2b29e814f40a8dd1748f3c001a3780338a9fe5ccb1510091e16323fb4b8d58a",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.0.ffn.in.weight",
+      "layout": "row_major",
+      "payload_offset": 1690880,
+      "payload_byte_length": 1638400
+    },
+    {
+      "name": "layers.0.ffn.out.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "630042b77aa71602e326cc8a9fe4b3e604335503d731e0a0a669b5b01d4077e6",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.0.ffn.out.bias",
+      "layout": "row_major",
+      "payload_offset": 3329280,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.0.ffn.out.weight",
+      "shape": [
+        320,
+        1280
+      ],
+      "dtype": "float32",
+      "checksum": "3f2903213b207ee65b81583fc0901b0d2bb7777075b753fb95b277ac965f2e50",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.0.ffn.out.weight",
+      "layout": "row_major",
+      "payload_offset": 3330560,
+      "payload_byte_length": 1638400
+    },
+    {
+      "name": "layers.0.ffn.pre_norm.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "a47943275a98256839fb2318fc020d5108829c7d5a31b1c6e6957fd562205157",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.0.ffn.pre_norm.bias",
+      "layout": "row_major",
+      "payload_offset": 4968960,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.0.ffn.pre_norm.weight",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "d557421433a72ed9b40bb7affdcc52d706747a61861cd0b77a2bc187ee798c43",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.0.ffn.pre_norm.weight",
+      "layout": "row_major",
+      "payload_offset": 4970240,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.1.attn.k_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "53740485b38b514d466a34f533f2500f14ac463db14e9268a8305eede9e459ef",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.1.attn.k_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 4971520,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.1.attn.k_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "be6da96166ac291232413dac800e84315846700db4b36a93548a171f1ebccc2c",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.1.attn.k_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 4972800,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.1.attn.out_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "41f2263e2368d5a6202532872410894b9c6e5600bff27299ee759593a917c829",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.1.attn.out_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 5382400,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.1.attn.out_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "02eb6a2fcbabe126b330696a7f47e2e8b1fa0085ccbd0d1631dcf942c27a3752",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.1.attn.out_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 5383680,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.1.attn.pre_norm.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "6624d1a5310ddf6a2cdf0a5db01a25b256784a450f429e98d70075dae334a429",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.1.attn.pre_norm.bias",
+      "layout": "row_major",
+      "payload_offset": 5793280,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.1.attn.pre_norm.weight",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "909bb9e9cb7b4882dd9ff40e42f600211f76518e1090ca89c416cf14b9673b34",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.1.attn.pre_norm.weight",
+      "layout": "row_major",
+      "payload_offset": 5794560,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.1.attn.q_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "3c53ed604c8e6789cb269eb35c7d4582959545906b1cf5172a747388aeda6a04",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.1.attn.q_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 5795840,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.1.attn.q_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "d1761f3f07f7a3db357601aff3c427bee5d524e15786fb581ca0d80431118cba",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.1.attn.q_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 5797120,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.1.attn.v_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "c0db7ca4ddd24c5ea0a1fb0bc511f7610b50965721ef3728853af2a352ab3554",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.1.attn.v_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 6206720,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.1.attn.v_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "287f36032775d09c4339e034ccbbf9f8b709e24cec6f2e6de6f9763cdb066c89",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.1.attn.v_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 6208000,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.1.ffn.in.bias",
+      "shape": [
+        1280
+      ],
+      "dtype": "float32",
+      "checksum": "3f9e140cc3a32eb2772151c0ac0342abbd8d60dcc87dacdc00c2d201fee1437b",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.1.ffn.in.bias",
+      "layout": "row_major",
+      "payload_offset": 6617600,
+      "payload_byte_length": 5120
+    },
+    {
+      "name": "layers.1.ffn.in.weight",
+      "shape": [
+        1280,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "d604535c873a5bc9a95c8bc4fa94c61d5195e5d8db5bacf40dc2a5ce5c1b583c",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.1.ffn.in.weight",
+      "layout": "row_major",
+      "payload_offset": 6622720,
+      "payload_byte_length": 1638400
+    },
+    {
+      "name": "layers.1.ffn.out.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "0e9bf1f424980c5ae6b68b1414bbee63929a0e2c792ac2efb22fcfdb97462695",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.1.ffn.out.bias",
+      "layout": "row_major",
+      "payload_offset": 8261120,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.1.ffn.out.weight",
+      "shape": [
+        320,
+        1280
+      ],
+      "dtype": "float32",
+      "checksum": "5b71edc161ef0a28ad3045e5244df79b0a5c99d35e526215a5b98b31da28d62b",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.1.ffn.out.weight",
+      "layout": "row_major",
+      "payload_offset": 8262400,
+      "payload_byte_length": 1638400
+    },
+    {
+      "name": "layers.1.ffn.pre_norm.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "5afd271dfd36b60a5be9d31ea67208e989ea9dc1eff6fc05f9e6779567fa4e33",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.1.ffn.pre_norm.bias",
+      "layout": "row_major",
+      "payload_offset": 9900800,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.1.ffn.pre_norm.weight",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "b28388486658215b1d0a35532ece9f68bb85809566ce82411169b5a1d0dbc43a",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.1.ffn.pre_norm.weight",
+      "layout": "row_major",
+      "payload_offset": 9902080,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.2.attn.k_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "350905843962d6a963802d91a832c1c5edde5603c3e5937cfb6a31fc60ac8b5e",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.2.attn.k_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 9903360,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.2.attn.k_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "94df685fdae2390ab9c41ad18d16c325c9adb4cd404483da17d869845b248594",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.2.attn.k_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 9904640,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.2.attn.out_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "3e068925f85323f31d248bfe82c23d01fb0e288d17eb3e06e2b0dab688ea77c5",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.2.attn.out_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 10314240,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.2.attn.out_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "1814b03d35578c67b9cfbfd7095761ec741a14c46146e4014ab56514f13dd336",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.2.attn.out_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 10315520,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.2.attn.pre_norm.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "ca94ef5ceb5e4233539fa0e9e634b67ee078754753d4a03901f6ab656288c312",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.2.attn.pre_norm.bias",
+      "layout": "row_major",
+      "payload_offset": 10725120,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.2.attn.pre_norm.weight",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "11e3d0c4be9b9752f265581f908e6213f2619316368f827dfca321e697f6e910",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.2.attn.pre_norm.weight",
+      "layout": "row_major",
+      "payload_offset": 10726400,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.2.attn.q_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "6a01279444282b120f6a7f361bc347de586d6ad822e68dddd9d89d8a503e302f",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.2.attn.q_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 10727680,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.2.attn.q_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "f9ae9d79c41c4b5e170ee7a1d25b5b2074f039a221e9a98d6639b9440350124a",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.2.attn.q_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 10728960,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.2.attn.v_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "64840ed7c113581e1f705cb9eb830d78fd3f0f4a1da0c52caebd0c5845d20f94",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.2.attn.v_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 11138560,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.2.attn.v_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "9572970e5604860ce3ccd99a149f88f27af3a511164da442bd6b151233729a52",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.2.attn.v_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 11139840,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.2.ffn.in.bias",
+      "shape": [
+        1280
+      ],
+      "dtype": "float32",
+      "checksum": "0b140cc3c65de1d2371f765a2be5fc9e6614895e66bdd96761a1c69bdadd6453",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.2.ffn.in.bias",
+      "layout": "row_major",
+      "payload_offset": 11549440,
+      "payload_byte_length": 5120
+    },
+    {
+      "name": "layers.2.ffn.in.weight",
+      "shape": [
+        1280,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "c719ed8dd4f962c2b29bd85e167102e16cbd42566dbddcda75a2b42563a2a3f2",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.2.ffn.in.weight",
+      "layout": "row_major",
+      "payload_offset": 11554560,
+      "payload_byte_length": 1638400
+    },
+    {
+      "name": "layers.2.ffn.out.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "ed0ed59694026f348d38a47d8c2a3b5c6ada302461ac63232edbc19a0f2662d0",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.2.ffn.out.bias",
+      "layout": "row_major",
+      "payload_offset": 13192960,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.2.ffn.out.weight",
+      "shape": [
+        320,
+        1280
+      ],
+      "dtype": "float32",
+      "checksum": "50871c92b93752d360ba09d91572189f19f768eaaa4b9c6403b76895593da0c3",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.2.ffn.out.weight",
+      "layout": "row_major",
+      "payload_offset": 13194240,
+      "payload_byte_length": 1638400
+    },
+    {
+      "name": "layers.2.ffn.pre_norm.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "226783aff67bc95f67c1a5a23d604ee20d017dd819e9fdf936859bcb25f3c0c6",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.2.ffn.pre_norm.bias",
+      "layout": "row_major",
+      "payload_offset": 14832640,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.2.ffn.pre_norm.weight",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "876db6cdfd16f64c05850459795cf7c8ab222d928056298afc741eb7708742b1",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.2.ffn.pre_norm.weight",
+      "layout": "row_major",
+      "payload_offset": 14833920,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.3.attn.k_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "bbe7ffb787e78f689d1a870275d806fd0226e4cfa3a5ea92275920eddf2473de",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.3.attn.k_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 14835200,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.3.attn.k_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "45e7fbf98ca13fd1f3e3216a7efcb73cc61a5cf9fc3d61f5b808114b046c26c8",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.3.attn.k_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 14836480,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.3.attn.out_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "903f1da54909134ba873f869594584a3beb9cd49c96ef5fab7fd32c37de7c09f",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.3.attn.out_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 15246080,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.3.attn.out_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "7eee298e489034b4d434e6296bcc76e324ffbaf01d338d9817991292c9aae456",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.3.attn.out_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 15247360,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.3.attn.pre_norm.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "0dec1dccde16f13d8480d6be6b0db5497606de1eb6684a2ee67d55ab1b663f6d",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.3.attn.pre_norm.bias",
+      "layout": "row_major",
+      "payload_offset": 15656960,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.3.attn.pre_norm.weight",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "94f90f66ec49715a73f1c6104f8aa84a92ebd1ca3a7170667b43ea45a9949f35",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.3.attn.pre_norm.weight",
+      "layout": "row_major",
+      "payload_offset": 15658240,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.3.attn.q_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "427ec156df5a218303f39f72cc38e06b32eddffdd4912d3cb756c0ee8210c852",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.3.attn.q_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 15659520,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.3.attn.q_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "3d37d22a3ce47ca58f823f8c3f6f6d5200cbc8fa8aee8404f6d5fb8ee004c3d7",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.3.attn.q_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 15660800,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.3.attn.v_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "33563234331803526d387ecba331f30b1e13706d4b5e955c1964d8bbaaf2da0b",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.3.attn.v_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 16070400,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.3.attn.v_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "1371a18da2c24dcea5e3462e5ef44cf3470f2c82a66845a0041adc31feacf2fe",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.3.attn.v_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 16071680,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.3.ffn.in.bias",
+      "shape": [
+        1280
+      ],
+      "dtype": "float32",
+      "checksum": "f30303facac72b53e44a01110df5b2319d570e2e5b987b6cc3f751b3483c69b5",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.3.ffn.in.bias",
+      "layout": "row_major",
+      "payload_offset": 16481280,
+      "payload_byte_length": 5120
+    },
+    {
+      "name": "layers.3.ffn.in.weight",
+      "shape": [
+        1280,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "3be013f205d0bb64bd6faea4530b890201a2110f62621ca32a0fac51127e979a",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.3.ffn.in.weight",
+      "layout": "row_major",
+      "payload_offset": 16486400,
+      "payload_byte_length": 1638400
+    },
+    {
+      "name": "layers.3.ffn.out.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "ce9afab4aaf1707c9cd845576b39f9f2c9af78aa1ee7ec2d767a076eb99db23d",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.3.ffn.out.bias",
+      "layout": "row_major",
+      "payload_offset": 18124800,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.3.ffn.out.weight",
+      "shape": [
+        320,
+        1280
+      ],
+      "dtype": "float32",
+      "checksum": "7431c1d354f4edcf560b7afc28033a5af1724c382c4598a2999e6c66f8e0b809",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.3.ffn.out.weight",
+      "layout": "row_major",
+      "payload_offset": 18126080,
+      "payload_byte_length": 1638400
+    },
+    {
+      "name": "layers.3.ffn.pre_norm.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "7b9cb8b343c5eabf6a8805783621b465991b9d55d9ea9dc732e6865d3c669d9a",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.3.ffn.pre_norm.bias",
+      "layout": "row_major",
+      "payload_offset": 19764480,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.3.ffn.pre_norm.weight",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "32b0c8390303184d02779a63637dae89685f5114a27abc10532fba9fba875047",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.3.ffn.pre_norm.weight",
+      "layout": "row_major",
+      "payload_offset": 19765760,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.4.attn.k_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "915f5012c264c9fc534d6f6628bada49a49eebc5a87a4cc6c22b6d1080542ddb",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.4.attn.k_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 19767040,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.4.attn.k_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "a45dcd27e7b6fa5a0a019037e376c77f5b6ba4a20db6e9f837cd74ff20dfa370",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.4.attn.k_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 19768320,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.4.attn.out_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "ee5c64dc315df21a548f65232620d155847a584d84f0d99c4a497d9819f50a5b",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.4.attn.out_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 20177920,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.4.attn.out_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "5a9bd16eda2addec40f6dd73cb4f185e65abf02c3d99c07fb17f4335363d27dc",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.4.attn.out_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 20179200,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.4.attn.pre_norm.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "487180156b3e1dc3fbc279102e845aba5f7522ca22157e2b5fd050890af82e71",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.4.attn.pre_norm.bias",
+      "layout": "row_major",
+      "payload_offset": 20588800,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.4.attn.pre_norm.weight",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "f65a14f503b655144d54aa8ae6741b16e8fec4c938ecc4dcb3998fa8e20dbd82",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.4.attn.pre_norm.weight",
+      "layout": "row_major",
+      "payload_offset": 20590080,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.4.attn.q_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "2707e8e503a246445f887c3cb64e916ae702d4c87b7475a2eb1be3c7a7535538",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.4.attn.q_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 20591360,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.4.attn.q_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "6ca9929658772c4c3351632e3c78b3913a558405de15f8858ecfd657fb7b33c2",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.4.attn.q_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 20592640,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.4.attn.v_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "b3527ad4cd3004bffc67240b63208d5df1bfda639413f7a0dee991a1877c8e6e",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.4.attn.v_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 21002240,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.4.attn.v_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "420f04c2fc3da0d205b35df94abe10e1569f63311eb46cec952526d7ee174846",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.4.attn.v_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 21003520,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.4.ffn.in.bias",
+      "shape": [
+        1280
+      ],
+      "dtype": "float32",
+      "checksum": "ef995bad8144d945f439070ccc0b24251ace8d8d728e1981e26fc5b54aa791c4",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.4.ffn.in.bias",
+      "layout": "row_major",
+      "payload_offset": 21413120,
+      "payload_byte_length": 5120
+    },
+    {
+      "name": "layers.4.ffn.in.weight",
+      "shape": [
+        1280,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "cd2f5236e8ba9710544b693ab03fdfb69ee45819a5011cb1f6f0267e786e0aae",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.4.ffn.in.weight",
+      "layout": "row_major",
+      "payload_offset": 21418240,
+      "payload_byte_length": 1638400
+    },
+    {
+      "name": "layers.4.ffn.out.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "7f7d91a61f7a47fd020f1939f8dd002e80480e451bd21833b5abe446634671be",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.4.ffn.out.bias",
+      "layout": "row_major",
+      "payload_offset": 23056640,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.4.ffn.out.weight",
+      "shape": [
+        320,
+        1280
+      ],
+      "dtype": "float32",
+      "checksum": "c07c2fe6c1588d09a370c1bacaf860fe53293831cefbdd55ae5c9ddd1f2db9d0",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.4.ffn.out.weight",
+      "layout": "row_major",
+      "payload_offset": 23057920,
+      "payload_byte_length": 1638400
+    },
+    {
+      "name": "layers.4.ffn.pre_norm.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "7813d8b7125ae68c78d24a1c6d00ecb39e7657272db7495d3f9e6660676251b1",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.4.ffn.pre_norm.bias",
+      "layout": "row_major",
+      "payload_offset": 24696320,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.4.ffn.pre_norm.weight",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "dbaa6ca49f831ec64848663aa1dd3f57a27fd76dc4f79bc9bb42f85b36bf6cdb",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.4.ffn.pre_norm.weight",
+      "layout": "row_major",
+      "payload_offset": 24697600,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.5.attn.k_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "ef497f68106189b1346b652e44d810866e2d41caf0259c6713e1132fd0275cb8",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.5.attn.k_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 24698880,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.5.attn.k_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "0c2fe07a8079ed6404b2083856d6ff00eb7f9b0c63ebfd96729de3eaf3b98750",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.5.attn.k_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 24700160,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.5.attn.out_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "cfcf8f93c3f93f5492f9bfaca90a4354e885232f7b2732edbff4f0f7c130e70a",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.5.attn.out_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 25109760,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.5.attn.out_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "706a922f0e91c2159a66544f6eb7a5c8d159bdd0dd1a4b66a75293d13f4c38e3",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.5.attn.out_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 25111040,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.5.attn.pre_norm.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "a943dd9236a5348dd91b880f9cdc8f4712839c3be71826fd142ca319f1998e6f",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.5.attn.pre_norm.bias",
+      "layout": "row_major",
+      "payload_offset": 25520640,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.5.attn.pre_norm.weight",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "a81649aea8942c242980d2249f4f86ac8c111852a040280e9aa0a452c31b9d07",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.5.attn.pre_norm.weight",
+      "layout": "row_major",
+      "payload_offset": 25521920,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.5.attn.q_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "8965ed97c305d5152e9dee3e476c07b7b5d34e2f26d04cc8d5ecce6b49aa8c1e",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.5.attn.q_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 25523200,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.5.attn.q_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "b7c9d02d9b2e4129054c1048fa9edfb84ba2eeca93c0ca46546bbf95edc9ab4a",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.5.attn.q_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 25524480,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.5.attn.v_proj.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "ac26e4b95f77ae32391ec6d2e25b899d51e2cf1be1dcd7f786a86d2b844a5454",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.5.attn.v_proj.bias",
+      "layout": "row_major",
+      "payload_offset": 25934080,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.5.attn.v_proj.weight",
+      "shape": [
+        320,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "72948aedd3d22a8b8efd8ecf52f25a4ebf99defaccf450755d49c68916316b9e",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.5.attn.v_proj.weight",
+      "layout": "row_major",
+      "payload_offset": 25935360,
+      "payload_byte_length": 409600
+    },
+    {
+      "name": "layers.5.ffn.in.bias",
+      "shape": [
+        1280
+      ],
+      "dtype": "float32",
+      "checksum": "25a275c2b22dc78ddc02160dc9508166bbee2c7d727ec4d86fdb944edcb2ed1a",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.5.ffn.in.bias",
+      "layout": "row_major",
+      "payload_offset": 26344960,
+      "payload_byte_length": 5120
+    },
+    {
+      "name": "layers.5.ffn.in.weight",
+      "shape": [
+        1280,
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "a2536457b49598cb412b2364584d04b34df2f03da19f145a6dda8cde47696d6e",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.5.ffn.in.weight",
+      "layout": "row_major",
+      "payload_offset": 26350080,
+      "payload_byte_length": 1638400
+    },
+    {
+      "name": "layers.5.ffn.out.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "e30f02f2ab12a6c72b8ebd163c987cd883ace5a5fca23da340e458ea20e646da",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.5.ffn.out.bias",
+      "layout": "row_major",
+      "payload_offset": 27988480,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.5.ffn.out.weight",
+      "shape": [
+        320,
+        1280
+      ],
+      "dtype": "float32",
+      "checksum": "d0a101eda1bbc8045930903f6d6ad85810d88e44a2a7f81513e08c01c3b380d5",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.5.ffn.out.weight",
+      "layout": "row_major",
+      "payload_offset": 27989760,
+      "payload_byte_length": 1638400
+    },
+    {
+      "name": "layers.5.ffn.pre_norm.bias",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "825ef4d4e2aed769d833229fd9b07f73827c0ece0087918cfdddb0510c12313f",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.5.ffn.pre_norm.bias",
+      "layout": "row_major",
+      "payload_offset": 29628160,
+      "payload_byte_length": 1280
+    },
+    {
+      "name": "layers.5.ffn.pre_norm.weight",
+      "shape": [
+        320
+      ],
+      "dtype": "float32",
+      "checksum": "171ac17ba42207c3b8f25881f0598f8a5c6251e026740f2ab4abed74ef03f69b",
+      "checksum_algorithm": "sha256",
+      "role": "architecture_parameter",
+      "architecture_slot": "layers.5.ffn.pre_norm.weight",
+      "layout": "row_major",
+      "payload_offset": 29629440,
+      "payload_byte_length": 1280
+    }
+  ],
+  "checksum": "7b1fea896ddbe6abb41e0f171cd1f9cce74868fbe44563afb87f3b176ccaca03",
+  "checksum_algorithm": "sha256",
+  "source_checkpoint": "megure-labs-internal://checkpoints/hikoboshi-esm2-8m/final_model.pt",
+  "source_checkpoint_checksum": "afa959cb694cfbe7358b06f5c04eb9c67e8c36f89e7b2518cb6e3f8832d0d9ce",
+  "generation_tool": "convert_esm2_8m_to_safetensors.py (Megure Labs internal)",
+  "generation_tool_version": "esm2-8m-weights-package-20260514",
+  "generation_date": "2026-05-14",
+  "gap_parameter_family": "Hikoboshi 0.1.0 hard-SW",
+  "gap_open": -1.01982,
+  "gap_ext": 0.225736,
+  "soft_gap_parameter_family": "Hikoboshi 0.1.0 soft-SW",
+  "soft_gap_open": -6.72805,
+  "soft_gap_ext": -0.0159468,
+  "calibrated_for_score_method": "raw_dot_v1",
+  "similarity": "raw_dot_product",
+  "validation_status": "checksum-verified; hard-SW anneal and soft-SW T=1 checkpoint defaults cross-checked and projected to six significant figures",
+  "provenance_status": "real safetensors blob embedded; historical gap tensors remain excluded from runtime weights",
+  "notes": "Hikoboshi-ESM2-8M compiled package backed by Casey's joint MLM+alignment fine-tuned ESM2-8M checkpoint. Runtime payload contains 99 tensors (29640016 bytes, data SHA-256 315bdd0d2fe7382afa9f84ea9048d7c5deb87d310d05bd84e020f0f5619a6dca). Source checkpoint SHA-256 afa959cb694cfbe7358b06f5c04eb9c67e8c36f89e7b2518cb6e3f8832d0d9ce. Hard-SW defaults gap_open=-1.01982 and gap_ext=+0.225736 are the six-significant-figure projection of terminal values -1.0198204517364502/+0.2257363647222519 at step 239100 of the gap-only T=1 to 1e-12 anneal (W&B project pfalign-esm2-8m-gaponly-stepwise-anneal, run t28wemg9; step export sha256 63e131ad96c4ada785b36a21bab4482cf8f2b303eb7ad729f059804052cde94a). Soft-SW T=1 defaults gap_open=-6.72805 and gap_ext=-0.0159468 project the checkpoint tensors -6.728054046630859/-0.01594681292772293 (tensor sha256 fdc124debc32686242bc1f8f0dd9e9e4045003b2ab1f16b5b20549c6d45e5089 and c6218a64dd0d79d814712aaef6b569e6119775cb4dcfaff1a8b09950ba7e30f3); those tensors remain excluded from runtime weights. Vocab=29 from Casey's compacted local alphabet; everything else matches stock ESM2-8M topology.",
+  "compiled_package_descriptor": {
+    "package": {
+      "package_schema_version": "0.1.0",
+      "package_id": "hikoboshi-esm2-8m",
+      "aliases": [
+        "esm2-8m",
+        "esm2_8m",
+        "Hikoboshi-ESM2-8M"
+      ],
+      "package_family": "Hikoboshi-ESM2",
+      "package_version": "afa959cb694cfbe7",
+      "package_kind": "registered_architecture",
+      "implementation_compatibility": {
+        "hikoboshi_min": "0.1.0",
+        "hikoboshi_max_exclusive": "0.2.0"
+      }
+    },
+    "execution": {
+      "execution_mode": "registered_architecture",
+      "architecture_id": "hikoboshi_esm2_v1",
+      "backend_requirements": [
+        "cpu.scalar"
+      ]
+    },
+    "storage": {
+      "storage_kind": "embedded",
+      "storage_format": "compiled_safetensors_blob",
+      "storage_layout": "large_payload_in_generated_cpp",
+      "embedded_symbol": "hikoboshi::weights::generated::esm2_8m::kSafetensorsBlob",
+      "generated_header": "cpp/weights/generated/esm2_8m_blob.hpp",
+      "generated_translation_unit": "cpp/weights/generated/esm2_8m_blob.cpp",
+      "payload_status": "embedded"
+    },
+    "capabilities": {
+      "input_routes": [
+        "sequence_tokens",
+        "residue_embeddings"
+      ],
+      "preprocessing": [
+        "tokenization"
+      ],
+      "output_kinds": [
+        "residue_embeddings"
+      ],
+      "dtypes": [
+        "float32"
+      ],
+      "layouts": [
+        "row_major"
+      ],
+      "backends": [
+        "cpu.scalar"
+      ]
+    },
+    "scoring": {
+      "score_method": "raw_dot_v1",
+      "score_inputs": [
+        "residue_embeddings"
+      ],
+      "score_output": "score_matrix",
+      "semantics": {
+        "dtype": "float32",
+        "layout": "row_major_query_by_target",
+        "higher_is_better": true,
+        "local_affine_additive": true,
+        "normalization": "none",
+        "scale_family": "raw_dot"
+      }
+    },
+    "gaps": {
+      "gap_family": "Hikoboshi 0.1.0 hard-SW",
+      "gap_model": "affine",
+      "gap_open": -1.01982,
+      "gap_ext": 0.225736,
+      "convention": "gap_open_plus_k_minus_1_gap_ext",
+      "calibrated_for_score_method": "raw_dot_v1",
+      "calibration_status": "terminal step 239100 of gap-only T=1 to 1e-12 anneal; W&B project pfalign-esm2-8m-gaponly-stepwise-anneal, run t28wemg9; projected to six significant figures"
+    },
+    "soft_gaps": {
+      "gap_family": "Hikoboshi 0.1.0 soft-SW",
+      "gap_model": "affine",
+      "gap_open": -6.72805,
+      "gap_ext": -0.0159468,
+      "convention": "gap_open_plus_k_minus_1_gap_ext",
+      "calibrated_for_score_method": "raw_dot_v1",
+      "calibration_status": "recovered from source checkpoint gap_open/gap_ext tensors; runtime tensor exclusion unchanged"
+    },
+    "alignment": {
+      "algorithm": "hard_local_affine_sw_v1",
+      "traceback_policy": [
+        "required_for_public_pairwise",
+        "required_for_public_all_vs_all"
+      ]
+    },
+    "provenance": {
+      "source_artifact": "megure-labs-internal://checkpoints/hikoboshi-esm2-8m/final_model.pt",
+      "source_artifact_checksum": "afa959cb694cfbe7358b06f5c04eb9c67e8c36f89e7b2518cb6e3f8832d0d9ce",
+      "source_artifact_checksum_algorithm": "sha256",
+      "training_corpus_pointer": "esm2_paper_lin_2023; UniRef50 / UniRef90 clustering",
+      "generation_tool": "convert_esm2_8m_to_safetensors.py (Megure Labs internal)",
+      "generation_tool_version": "esm2-8m-weights-package-20260514",
+      "generation_date": "2026-05-14",
+      "validation_status": "checksum-verified; hard-SW anneal and soft-SW T=1 checkpoint defaults cross-checked and projected to six significant figures",
+      "notes": "Hikoboshi-ESM2-8M runtime payload: 99 tensors (29640016 bytes embedded, data offset 9296, data length 29630720). Hard-SW defaults -1.01982/+0.225736 project the terminal values -1.0198204517364502/+0.2257363647222519 from W&B run t28wemg9 (step export sha256 63e131ad96c4ada785b36a21bab4482cf8f2b303eb7ad729f059804052cde94a). Soft-SW T=1 defaults -6.72805/-0.0159468 project the source checkpoint's excluded gap_open/gap_ext tensors. Excluded training-time tensors are documented in the sibling provenance.json."
+    }
+  }
+}

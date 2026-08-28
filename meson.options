@@ -1,0 +1,116 @@
+option(
+  'hikoboshi_python_api',
+  type: 'boolean',
+  value: false,
+  description: 'Build and install the CPython extension and Python package. The default native CLI/SDK build does not discover or link Python.',
+)
+
+option(
+  'hikoboshi_backend_cuda',
+  type: 'feature',
+  value: 'disabled',
+  description: 'Reserved for future CUDA backend builds; Hikoboshi 0.1.0 is scalar-only.',
+)
+
+option(
+  'hikoboshi_backend_hip',
+  type: 'feature',
+  value: 'disabled',
+  description: 'Reserved for future HIP backend builds; Hikoboshi 0.1.0 is scalar-only.',
+)
+
+option(
+  'hikoboshi_backend_metal',
+  type: 'feature',
+  value: 'disabled',
+  description: 'Reserved for future Metal backend builds; Hikoboshi 0.1.0 is scalar-only.',
+)
+
+option(
+  'hikoboshi_backend_vulkan',
+  type: 'feature',
+  value: 'disabled',
+  description: 'Reserved for future Vulkan backend builds; Hikoboshi 0.1.0 is scalar-only.',
+)
+
+option(
+  'hikoboshi_backend_opencl',
+  type: 'feature',
+  value: 'disabled',
+  description: 'Reserved for future OpenCL backend builds; Hikoboshi 0.1.0 is scalar-only.',
+)
+
+option(
+  'hikoboshi_backend_simd',
+  type: 'combo',
+  choices: ['none', 'auto', 'sse4', 'avx2', 'avx512', 'neon', 'sve', 'fat'],
+  value: 'none',
+  description: 'Reserved for future CPU SIMD build variants; Hikoboshi 0.1.0 uses scalar only.',
+)
+
+option(
+  'hikoboshi_backend_cuda_archs',
+  type: 'string',
+  value: 'auto',
+  description: 'Reserved CUDA architecture list for future GPU builds; documented-only in Hikoboshi 0.1.0.',
+)
+
+option(
+  'hikoboshi_backend_hip_archs',
+  type: 'string',
+  value: 'auto',
+  description: 'Reserved HIP architecture list for future GPU builds; documented-only in Hikoboshi 0.1.0.',
+)
+
+option(
+  'hikoboshi_bench_no_deterministic_sink',
+  type: 'boolean',
+  value: false,
+  description: 'DEVELOPER USE ONLY — produces non-reproducible output; never enable in release builds.',
+)
+
+option(
+  'hikoboshi_bench_mpnn_dump',
+  type: 'boolean',
+  value: false,
+  description: 'DEVELOPER PARITY HOOK — compile Hikoboshi-MPNN-64 intermediate tensor dump callbacks for real-protein parity investigation.',
+)
+
+option(
+  'hikoboshi_allvsall_embedding_storage',
+  type: 'combo',
+  choices: ['max_l_padded', 'bucketed'],
+  value: 'bucketed',
+  description: 'DEVELOPER MEASUREMENT HOOK — all-vs-all structure embedding cache layout.',
+)
+
+option(
+  'hikoboshi_allvsall_sink',
+  type: 'combo',
+  choices: ['streaming', 'buffered'],
+  value: 'streaming',
+  description: 'all-vs-all parallel sink architecture (default \'streaming\'). \'streaming\' is the deterministic per-worker-buffer + sequencer design (ssf1): each worker writes completed records into its own bounded ring and a dedicated sequencer thread emits them downstream in canonical pair_id order, so steady-state memory is O(in-flight) rather than an N²-sized buffer. Output stays byte-identical across repeated runs and thread counts. \'buffered\' selects the legacy N²-sized record vector and is retained as an explicit developer fallback (-Dhikoboshi_allvsall_sink=buffered).',
+)
+
+option(
+  'hikoboshi_allvsall_pair_scheduler',
+  type: 'combo',
+  choices: ['cost_aware', 'query_tiled'],
+  value: 'cost_aware',
+  description: 'all-vs-all parallel pair scheduling order. \'cost_aware\' dispatches pair_ids in descending predicted-cost order (p41); \'query_tiled\' dispatches Q×T tiles so each worker reuses one query embedding chunk across many target alignments before releasing it (p48). Streaming sink path stays in pair_id order regardless (p50).',
+)
+
+option(
+  'hikoboshi_lto',
+  type: 'boolean',
+  value: false,
+  description: 'Enable link-time optimization (b_lto=true). Default false in 0.1.0 to keep the released binary stable; opt in for closed-op-perf-recovery measurement runs.',
+)
+
+option(
+  'hikoboshi_gemm_parity_mode',
+  type: 'combo',
+  choices: ['fast', 'strict'],
+  value: 'fast',
+  description: 'Per-op default parity contract for the scalar GEMM dispatch tree. \'strict\' selects the bit-identity-to-PyTorch-cuBLAS reduction-tree kernel (current main); \'fast\' selects the BLIS-style streaming-outer-product kernel and only promises the public 1e-4 max-abs tolerance. Override per-run with HIKOBOSHI_GEMM_PARITY_MODE={strict,fast}.',
+)
