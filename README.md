@@ -12,14 +12,13 @@
   <a href="https://www.apache.org/licenses/LICENSE-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-green.svg" alt="License: Apache 2.0"></a>
 </p>
 
-Hikoboshi is Megure Labs' native bioinformatics suite: a single CLI, Python
-API, and C++ core intended to replace the fragmented collection of tools used
-for biological sequence and structure analysis. The first release starts with
-the common foundation—learned sequence and structure encoders, pairwise and
-all-vs-all alignment, scoring, artifact generation, and ProteinMPNN inverse
-folding—then grows that foundation into database search, multiple sequence
-alignment, phylogenetics, clustering, and the rest of the bioinformatics
-toolchain.
+Hikoboshi is Megure Labs' native bioinformatics suite. Its goal is to replace
+the fragmented collection of tools used for biological sequence and structure
+analysis with one CLI, Python API, and C++ core. Version 0.1.0 starts with
+learned sequence and structure encoders, pairwise and all-vs-all alignment,
+scoring, artifact generation, and ProteinMPNN inverse folding. The same core
+will support database search, multiple sequence alignment, phylogenetics,
+clustering, and more.
 
 The model packages and tokenizers are embedded and verified at build time, so
 the compiled core has no PyTorch or TensorFlow runtime dependency and performs
@@ -211,9 +210,9 @@ The principal surfaces are:
 
 ## Alignment and metrics
 
-Hard mode uses local affine Smith–Waterman and returns the discrete alignment
-path. Soft mode evaluates a differentiable partition-function alignment;
-`both` runs both branches and keeps the hard path as the primary alignment.
+Hard mode runs local affine Smith–Waterman and returns the discrete alignment
+path. Soft mode evaluates a differentiable partition-function alignment. The
+`both` mode runs both and keeps the hard path as the primary alignment.
 Soft and both modes are approximately 6–10× slower than hard mode at the same
 problem size.
 
@@ -289,10 +288,10 @@ projects.
 
 ## Contributing, license, and provenance
 
-Admission is actor-neutral: human-written and agent-written changes are subject
-to identical provenance, clean-room, licensing, validation, and admission
-requirements; maintainer authority can authorize work but does not exempt it
-from those requirements.
+Admission is actor-neutral. Human-written and agent-written changes are subject
+to the same provenance, clean-room, licensing, validation, and admission
+requirements. Maintainer authority can authorize work, but it does not exempt a
+change from those requirements.
 
 External upstream contributions are temporarily closed until Megure Labs
 deploys the production Kaname verifier. Forking and downstream modification
@@ -310,6 +309,5 @@ separate permissive terms in
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 The repository is a fresh release cut owned by Megure Labs and attributed to
-Casey Mogilevsky. Where Kaname provenance exists, complete immutable,
-append-only execution and review traces are retained privately and are
-available on request; see [PROVENANCE.md](PROVENANCE.md).
+Casey Mogilevsky. Development records for this release are retained privately
+and are available on request. See [PROVENANCE.md](PROVENANCE.md).
