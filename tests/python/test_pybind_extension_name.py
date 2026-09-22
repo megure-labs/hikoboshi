@@ -15,5 +15,5 @@ require("_align_cpp" not in matches[0].name, "extension filename uses legacy nam
 
 module = load_core()
 require(module.__name__ == "hikoboshi._core", "extension module name mismatch")
-require(module.__version__ == "0.1.0", "extension version mismatch")
+require(module.__version__ == "0.1.1", "extension version mismatch")
 require(not hasattr(module, "_compute_distances_from_embeddings"), "legacy distance binding exists")

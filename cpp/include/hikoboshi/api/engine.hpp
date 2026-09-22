@@ -21,6 +21,7 @@
 #include <hikoboshi/universal/span.hpp>
 #include <hikoboshi/universal/status.hpp>
 #include <hikoboshi/universal/weights.hpp>
+#include <hikoboshi/universal/structure_embedding_cache.hpp>
 
 namespace hikoboshi::api {
 
@@ -124,6 +125,9 @@ struct EngineConfig {
   universal::PackageHandle package{nullptr, nullptr};
   /// Optional planner policy. Null selects the scalar-only 0.1.0 policy.
   const universal::PlannerPolicy* planner_policy = nullptr;
+  /// Borrowed optional cache for structure/coordinate pair-list and all-vs-all.
+  /// Owner binds encoder identity and outlives each call; other routes ignore it.
+  universal::StructureEmbeddingCache* structure_embedding_cache = nullptr;
 };
 
 /// In-memory public C++ entry point for Hikoboshi 0.1.0.
@@ -220,6 +224,21 @@ class Engine {
   universal::Result<AllVsAllResult> collect_all_vs_all(
       const AllVsAllEmbeddingRequest& request) const;
 
+  /// Emit named pairs in caller order, including duplicates and reverse pairs.
+  /// Results borrow storage until receive() returns; copy to retain a record.
+  /// Callbacks run serially on the calling thread. A non-ok callback stops
+  /// emission and is returned unchanged. On failure an ordered prefix may
+  /// already have been emitted. Result staging is bounded independently of
+  /// pair count; input IDs, resolved pairs and encoded proteins remain resident.
+  [[nodiscard]] universal::Status pair_list(
+      const PairListStructureRequest& request, PairwiseResultSink& sink) const;
+  [[nodiscard]] universal::Status pair_list(
+      const PairListCoordsRequest& request, PairwiseResultSink& sink) const;
+  [[nodiscard]] universal::Status pair_list(
+      const PairListEmbeddingRequest& request, PairwiseResultSink& sink) const;
+  [[nodiscard]] universal::Status pair_list(
+      const PairListSequenceRequest& request, PairwiseResultSink& sink) const;
+
   /// Align a caller-supplied list of named structure pairs.
   ///
   /// Pair-list is the third alignment driver mode alongside `pairwise` and
@@ -227,24 +246,22 @@ class Engine {
   /// encodes each exactly once, and aligns only the listed pairs, collecting
   /// one record per pair in input order. Records reuse the `AllVsAllResult`
   /// shape; this entry mirrors the `collect_all_vs_all` convenience
-  /// signature. Declared by npc1a — the body returns
-  /// `StatusCode::Unimplemented` until npc1b lands the pair-list dedup +
-  /// encode-once + per-pair dispatch implementation.
+  /// signature. Prefer pair_list(request, sink) for bounded result storage.
   [[nodiscard]] universal::Result<AllVsAllResult> collect_pair_list(
       const PairListStructureRequest& request) const;
   /// Align a caller-supplied list of named coordinate pairs.
   ///
-  /// See the structure overload; declaration-only until npc1b.
+  /// See the structure overload.
   [[nodiscard]] universal::Result<AllVsAllResult> collect_pair_list(
       const PairListCoordsRequest& request) const;
   /// Align a caller-supplied list of named embedding pairs.
   ///
-  /// See the structure overload; declaration-only until npc1b.
+  /// See the structure overload.
   [[nodiscard]] universal::Result<AllVsAllResult> collect_pair_list(
       const PairListEmbeddingRequest& request) const;
   /// Align a caller-supplied list of named sequence pairs.
   ///
-  /// See the structure overload; declaration-only until npc1b.
+  /// See the structure overload.
   [[nodiscard]] universal::Result<AllVsAllResult> collect_pair_list(
       const PairListSequenceRequest& request) const;
 
@@ -254,6 +271,15 @@ class Engine {
   BackendCapabilities backend_capabilities() const noexcept;
 
  private:
+  universal::Result<AllVsAllResult> run_pair_list(
+      const PairListStructureRequest& request, PairwiseResultSink* sink) const;
+  universal::Result<AllVsAllResult> run_pair_list(
+      const PairListCoordsRequest& request, PairwiseResultSink* sink) const;
+  universal::Result<AllVsAllResult> run_pair_list(
+      const PairListEmbeddingRequest& request, PairwiseResultSink* sink) const;
+  universal::Result<AllVsAllResult> run_pair_list(
+      const PairListSequenceRequest& request, PairwiseResultSink* sink) const;
+
   EngineConfig config_;
   std::shared_ptr<void> threading_;
 };

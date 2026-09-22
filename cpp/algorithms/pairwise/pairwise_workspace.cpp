@@ -17,11 +17,6 @@ void assign_span(std::vector<float>& storage, Span<float>& span) noexcept {
   span = {storage.data(), storage.size()};
 }
 
-void assign_span(std::vector<std::int32_t>& storage,
-                 Span<std::int32_t>& span) noexcept {
-  span = {storage.data(), storage.size()};
-}
-
 template <typename T>
 void grow_to(std::vector<T>& storage, std::size_t required_size) {
   if (storage.size() < required_size) {
@@ -32,37 +27,7 @@ void grow_to(std::vector<T>& storage, std::size_t required_size) {
 void resize_mpnn_workspace(
     PairwiseWorkspace::OwnedMpnnWorkspace& owned,
     const hikoboshi::modules::detail::Mpnn64MemoryPlan& plan) {
-  namespace pmd = hikoboshi::modules::detail;
-  owned.workspace.plan = plan;
-  grow_to(owned.ca_coordinates, pmd::mpnn64_ca_coordinate_count(plan));
-  grow_to(owned.residue_features, pmd::mpnn64_residue_feature_count(plan));
-  grow_to(owned.neighbor_indices, pmd::mpnn64_neighbor_slot_count(plan));
-  grow_to(owned.neighbor_squared_distances,
-          pmd::mpnn64_neighbor_slot_count(plan));
-  grow_to(owned.rbf_features, pmd::mpnn64_neighbor_rbf_count(plan));
-  grow_to(owned.residue_state, pmd::mpnn64_residue_hidden_count(plan));
-  grow_to(owned.gathered_state, pmd::mpnn64_neighbor_hidden_count(plan));
-  grow_to(owned.edge_state, pmd::mpnn64_neighbor_hidden_count(plan));
-  grow_to(owned.message_state, pmd::mpnn64_neighbor_hidden_count(plan));
-  grow_to(owned.projected_message_state,
-          pmd::mpnn64_neighbor_hidden_count(plan));
-  grow_to(owned.residue_scratch, pmd::mpnn64_residue_hidden_count(plan));
-  grow_to(owned.ffn_hidden, pmd::mpnn64_ffn_hidden_count(plan));
-
-  assign_span(owned.ca_coordinates, owned.workspace.ca_coordinates);
-  assign_span(owned.residue_features, owned.workspace.residue_features);
-  assign_span(owned.neighbor_indices, owned.workspace.neighbor_indices);
-  assign_span(owned.neighbor_squared_distances,
-              owned.workspace.neighbor_squared_distances);
-  assign_span(owned.rbf_features, owned.workspace.rbf_features);
-  assign_span(owned.residue_state, owned.workspace.residue_state);
-  assign_span(owned.gathered_state, owned.workspace.gathered_state);
-  assign_span(owned.edge_state, owned.workspace.edge_state);
-  assign_span(owned.message_state, owned.workspace.message_state);
-  assign_span(owned.projected_message_state,
-              owned.workspace.projected_message_state);
-  assign_span(owned.residue_scratch, owned.workspace.residue_scratch);
-  assign_span(owned.ffn_hidden, owned.workspace.ffn_hidden);
+  owned.prepare(plan);
 }
 
 void deactivate_owned_mpnn(PairwiseWorkspace::OwnedMpnnWorkspace& owned) noexcept {

@@ -1,4 +1,5 @@
 #include <hikoboshi/modules/mpnn.hpp>
+#include <hikoboshi/algorithms/detail/mpnn_workspace_storage.hpp>
 
 #include <array>
 #include <cmath>
@@ -7,6 +8,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
+#include <cstring>
+#include <string_view>
 
 namespace hiko_m = hikoboshi::modules;
 namespace hiko_d = hikoboshi::modules::detail;
@@ -154,7 +157,7 @@ struct SyntheticWeights {
   std::vector<float> norm2_bias;
   std::vector<float> norm3_weight;
   std::vector<float> norm3_bias;
-  std::array<hiko_d::Mpnn64LayerWeights, 1> layers{};
+  std::array<hiko_d::Mpnn64LayerWeights, 3> layers{};
   hiko_d::Mpnn64Weights view{};
 };
 
@@ -239,28 +242,61 @@ SyntheticWeights make_weights(const std::vector<float>& edge_pattern,
       {span(weights.edge_norm_weight), span(weights.edge_norm_bias)}};
   weights.view.positional_encoding =
       {span(weights.positional_weight), span(weights.positional_bias)};
+  weights.layers.fill(layer);
   weights.view.layers = weights.layers.data();
   weights.view.layer_count = weights.layers.size();
   return weights;
 }
 
 hiko_u::Status run_forward(SyntheticWeights& weights,
-                        OwnedWorkspace& workspace,
+                        hiko_d::Mpnn64Workspace& workspace,
                         const hiko_m::Mpnn64Descriptor& descriptor,
-                        std::vector<float>& embeddings) {
+                        std::vector<float>& embeddings,
+                        hiko_m::Mpnn64DebugCapture* capture = nullptr
+#ifdef HIKOBOSHI_BENCH_MPNN_DUMP
+                        , hiko_m::Mpnn64IntermediateDumper dumper = {}
+#endif
+                        ) {
   constexpr std::size_t kResidues = 1;
   std::array<float, kResidues * hiko_d::kMpnn64AtomCount *
                         hiko_d::kMpnn64AxisCount>
       coordinates{};
   std::array<hiko_u::AtomSource, kResidues * hiko_d::kMpnn64AtomCount> atom_sources{};
   atom_sources.fill(hiko_u::AtomSource::Observed);
+  hiko_m::Mpnn64ForwardRequest request{
+      coordinates.data(), atom_sources.data(), kResidues, descriptor,
+      &weights.view, &workspace};
+  request.debug_capture = capture;
+#ifdef HIKOBOSHI_BENCH_MPNN_DUMP
+  request.intermediate_dumper = dumper;
+#endif
   return hiko_m::mpnn64_forward_scalar(
-      {coordinates.data(), atom_sources.data(), kResidues, descriptor,
-       &weights.view, &workspace.view},
-      {embeddings.data(), kResidues, descriptor.hidden_dimension});
+      request, {embeddings.data(), kResidues, descriptor.hidden_dimension});
 }
 
-void test_layer_algebra_message_scaling_and_invalid_neighbor_mask() {
+#ifdef HIKOBOSHI_BENCH_MPNN_DUMP
+struct DumpCapture {
+  std::size_t edge_updates = 0;
+  std::vector<float> last_edges;
+};
+void capture_dump_edges(const hiko_m::Mpnn64IntermediateTensor& tensor,
+                        void* user_data) noexcept {
+  constexpr std::string_view suffix{".post_edge_update_residual_norm3"};
+  const std::string_view name{tensor.name};
+  if (name.size() < suffix.size() ||
+      name.substr(name.size() - suffix.size()) != suffix)
+    return;
+  auto& capture = *static_cast<DumpCapture*>(user_data);
+  ++capture.edge_updates;
+  std::size_t count = 1;
+  for (std::size_t i = 0; i < tensor.rank; ++i) count *= tensor.shape[i];
+  const auto* values = static_cast<const float*>(tensor.data);
+  capture.last_edges.assign(values, values + count);
+}
+#endif
+
+void test_layer_algebra_message_scaling_and_invalid_neighbor_mask(
+    std::size_t layer_count, std::size_t neighbor_count, bool compact) {
   constexpr std::size_t H = hiko_d::kMpnn64HiddenDimension;
   constexpr std::size_t F = hiko_d::kMpnn64FfnHiddenDimension;
   std::vector<float> edge_pattern(H);
@@ -269,59 +305,78 @@ void test_layer_algebra_message_scaling_and_invalid_neighbor_mask() {
     edge_pattern[d] = 0.05F + 0.01F * static_cast<float>(d);
     ffn_bias[d] = -0.2F + 0.007F * static_cast<float>(d);
   }
-
-  hiko_m::Mpnn64Descriptor descriptor{H, 2, 16, 1, 2.0F};
-  const hiko_d::Mpnn64MemoryPlan plan{1, H, descriptor.neighbor_count,
-                                   descriptor.rbf_count,
-                                   descriptor.layer_count};
-  OwnedWorkspace workspace = make_workspace(plan);
+  hiko_m::Mpnn64Descriptor descriptor{H, neighbor_count, 16, layer_count, 2.0F};
+  const hiko_d::Mpnn64MemoryPlan plan{1, H, neighbor_count, 16, layer_count};
+  OwnedWorkspace separate = make_workspace(plan);
+  hikoboshi::algorithms::detail::Mpnn64WorkspaceStorage shared;
+  shared.prepare(plan);
+  auto& workspace = compact ? shared.workspace : separate.view;
   SyntheticWeights weights = make_weights(edge_pattern, ffn_bias);
-  std::vector<float> embeddings(H, 0.0F);
-  const hiko_u::Status status =
-      run_forward(weights, workspace, descriptor, embeddings);
-  if (status.code != hiko_u::StatusCode::Ok) {
-    fail("synthetic message-passing forward returned non-ok");
-  }
-  if (workspace.neighbor_indices[0] != 0 || workspace.neighbor_indices[1] != -1) {
-    fail("one-residue KNN must expose one valid self edge and one invalid edge");
-  }
+  std::vector<float> embeddings(H, 0.0F), initial_edges(neighbor_count * H);
+  std::array<std::vector<float>, 3> node_captures;
+  for (auto& values : node_captures) values.resize(H);
+  std::vector<float> final_capture(H);
+  hiko_m::Mpnn64DebugCapture capture{
+      initial_edges.data(), node_captures[0].data(), node_captures[1].data(),
+      node_captures[2].data(), final_capture.data()};
+  if (run_forward(weights, workspace, descriptor, embeddings, &capture).code !=
+      hiko_u::StatusCode::Ok) fail("synthetic message-passing forward returned non-ok");
+  if (workspace.neighbor_indices.data[0] != 0 ||
+      (neighbor_count > 1 && workspace.neighbor_indices.data[1] != -1))
+    fail("KNN must expose self edge and mask any padded edge");
 
-  std::vector<float> message(H);
-  std::vector<float> ffn_out(H);
-  for (std::size_t d = 0; d < H; ++d) {
-    message[d] = gelu(gelu(edge_pattern[d]));
-    ffn_out[d] = gelu(ffn_bias[d]);
-  }
-  std::vector<float> after_message(H);
-  for (std::size_t d = 0; d < H; ++d) {
-    after_message[d] = message[d] / descriptor.message_scale;
-  }
-  after_message = layer_norm(after_message);
-  std::vector<float> after_ffn(H);
-  for (std::size_t d = 0; d < H; ++d) {
-    after_ffn[d] = after_message[d] + ffn_out[d];
-  }
-  after_ffn = layer_norm(after_ffn);
-
-  for (std::size_t d = 0; d < H; ++d) {
-    if (!nearly_equal(embeddings[d], after_ffn[d])) {
-      fail("node output must match W1/W2/W3 aggregate, residual, norm, and FFN algebra");
+  // Independent scalar reference: only an earlier layer's updated edges can
+  // affect a node embedding. Also retain the hypothetical final edges to check
+  // the diagnostic path, which still promises all intermediate tensors.
+  std::vector<float> node(H, 0.0F), edge = edge_pattern;
+  std::vector<float> expected_workspace_edge = edge;
+  for (std::size_t layer = 0; layer < layer_count; ++layer) {
+    std::vector<float> message(H);
+    for (std::size_t d = 0; d < H; ++d) {
+      message[d] = gelu(gelu(edge[d]));
+      node[d] += message[d] / descriptor.message_scale;
     }
+    node = layer_norm(node);
+    for (std::size_t d = 0; d < H; ++d) node[d] += gelu(ffn_bias[d]);
+    node = layer_norm(node);
+    for (std::size_t d = 0; d < H; ++d)
+      if (!nearly_equal(node_captures[layer][d], node[d]))
+        fail("debug capture must preserve every node layer boundary");
+    expected_workspace_edge = edge;
+    for (std::size_t d = 0; d < H; ++d) edge[d] += message[d];
+    edge = layer_norm(edge);
   }
-
-  std::vector<float> expected_edge(H);
   for (std::size_t d = 0; d < H; ++d) {
-    expected_edge[d] = edge_pattern[d] + message[d];
+    if (!nearly_equal(embeddings[d], node[d]))
+      fail("embedding must preserve multilayer message/FFN algebra");
+    if (!nearly_equal(workspace.edge_state.data[d], expected_workspace_edge[d]))
+      fail("normal forward must stop edge updates after the penultimate layer");
+    if (neighbor_count > 1 && !nearly_equal(workspace.edge_state.data[H+d], edge_pattern[d]))
+      fail("invalid padded edge must remain unchanged");
+    if (!nearly_equal(initial_edges[d], edge_pattern[d]))
+      fail("initial edge debug capture must remain unchanged");
   }
-  expected_edge = layer_norm(expected_edge);
+  if (std::memcmp(final_capture.data(), embeddings.data(), H * sizeof(float)))
+    fail("final debug capture must equal returned embeddings");
+  std::vector<float> repeated(H);
+  if (run_forward(weights, workspace, descriptor, repeated).code != hiko_u::StatusCode::Ok ||
+      std::memcmp(repeated.data(), embeddings.data(), H * sizeof(float)))
+    fail("workspace reuse must not consume stale terminal edge/scratch state");
+#ifdef HIKOBOSHI_BENCH_MPNN_DUMP
+  DumpCapture dumped;
+  std::vector<float> diagnostic(H);
+  if (run_forward(weights, workspace, descriptor, diagnostic, nullptr,
+                  {capture_dump_edges, &dumped}).code != hiko_u::StatusCode::Ok)
+    fail("diagnostic forward returned non-ok");
+  if (dumped.edge_updates != layer_count)
+    fail("diagnostic forward must still emit every edge update");
   for (std::size_t d = 0; d < H; ++d) {
-    if (!nearly_equal(workspace.edge_state[d], expected_edge[d])) {
-      fail("valid edge output must match W11/W12/W13 residual norm algebra");
-    }
-    if (!nearly_equal(workspace.edge_state[H + d], edge_pattern[d])) {
-      fail("invalid padded edge must not be updated by message passing");
-    }
+    if (!nearly_equal(diagnostic[d], embeddings[d]))
+      fail("diagnostic path must preserve node embeddings");
+    if (layer_count && !nearly_equal(dumped.last_edges[d], edge[d]))
+      fail("diagnostic terminal edge tensor must retain its original algebra");
   }
+#endif
 }
 
 void test_layer_shape_validation_rejects_missing_tensor() {
@@ -340,7 +395,7 @@ void test_layer_shape_validation_rejects_missing_tensor() {
   OwnedWorkspace workspace = make_workspace(plan);
   std::vector<float> embeddings(H, 0.0F);
   const hiko_u::Status status =
-      run_forward(weights, workspace, descriptor, embeddings);
+      run_forward(weights, workspace.view, descriptor, embeddings);
   if (status.code != hiko_u::StatusCode::InvalidArgument) {
     fail("wrong W13 tensor shape must be rejected");
   }
@@ -349,7 +404,11 @@ void test_layer_shape_validation_rejects_missing_tensor() {
 }  // namespace
 
 int main() {
-  test_layer_algebra_message_scaling_and_invalid_neighbor_mask();
+  for (std::size_t layers : {0U, 1U, 2U, 3U}) {
+    for (std::size_t neighbors : {1U, 2U})
+      for (bool compact : {false, true})
+        test_layer_algebra_message_scaling_and_invalid_neighbor_mask(layers, neighbors, compact);
+  }
   test_layer_shape_validation_rejects_missing_tensor();
   return 0;
 }

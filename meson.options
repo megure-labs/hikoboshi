@@ -1,4 +1,12 @@
 option(
+  'hikoboshi_cpu_target',
+  type: 'combo',
+  choices: ['portable', 'native'],
+  value: 'portable',
+  description: 'CPU compiler target: portable adds no host-specific flags; native optimizes for the build CPU and requires compatible deployment hardware.',
+)
+
+option(
   'hikoboshi_python_api',
   type: 'boolean',
   value: false,
@@ -9,35 +17,35 @@ option(
   'hikoboshi_backend_cuda',
   type: 'feature',
   value: 'disabled',
-  description: 'Reserved for future CUDA backend builds; Hikoboshi 0.1.0 is scalar-only.',
+  description: 'Reserved for future CUDA backend builds; Hikoboshi 0.1 is scalar-only.',
 )
 
 option(
   'hikoboshi_backend_hip',
   type: 'feature',
   value: 'disabled',
-  description: 'Reserved for future HIP backend builds; Hikoboshi 0.1.0 is scalar-only.',
+  description: 'Reserved for future HIP backend builds; Hikoboshi 0.1 is scalar-only.',
 )
 
 option(
   'hikoboshi_backend_metal',
   type: 'feature',
   value: 'disabled',
-  description: 'Reserved for future Metal backend builds; Hikoboshi 0.1.0 is scalar-only.',
+  description: 'Reserved for future Metal backend builds; Hikoboshi 0.1 is scalar-only.',
 )
 
 option(
   'hikoboshi_backend_vulkan',
   type: 'feature',
   value: 'disabled',
-  description: 'Reserved for future Vulkan backend builds; Hikoboshi 0.1.0 is scalar-only.',
+  description: 'Reserved for future Vulkan backend builds; Hikoboshi 0.1 is scalar-only.',
 )
 
 option(
   'hikoboshi_backend_opencl',
   type: 'feature',
   value: 'disabled',
-  description: 'Reserved for future OpenCL backend builds; Hikoboshi 0.1.0 is scalar-only.',
+  description: 'Reserved for future OpenCL backend builds; Hikoboshi 0.1 is scalar-only.',
 )
 
 option(
@@ -45,21 +53,21 @@ option(
   type: 'combo',
   choices: ['none', 'auto', 'sse4', 'avx2', 'avx512', 'neon', 'sve', 'fat'],
   value: 'none',
-  description: 'Reserved for future CPU SIMD build variants; Hikoboshi 0.1.0 uses scalar only.',
+  description: 'Reserved for future CPU SIMD build variants; Hikoboshi 0.1 uses scalar only.',
 )
 
 option(
   'hikoboshi_backend_cuda_archs',
   type: 'string',
   value: 'auto',
-  description: 'Reserved CUDA architecture list for future GPU builds; documented-only in Hikoboshi 0.1.0.',
+  description: 'Reserved CUDA architecture list for future GPU builds; documented-only in Hikoboshi 0.1.',
 )
 
 option(
   'hikoboshi_backend_hip_archs',
   type: 'string',
   value: 'auto',
-  description: 'Reserved HIP architecture list for future GPU builds; documented-only in Hikoboshi 0.1.0.',
+  description: 'Reserved HIP architecture list for future GPU builds; documented-only in Hikoboshi 0.1.',
 )
 
 option(

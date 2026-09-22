@@ -8,6 +8,7 @@
 #include <hikoboshi/dispatch/dispatch_table.hpp>
 #include <hikoboshi/dispatch/scalar_forward.hpp>
 #include <hikoboshi/primitives/linalg/gemm.hpp>
+#include <hikoboshi/modules/mpnn/detail/mpnn_inner_inline.hpp>
 
 #include <cmath>
 #include <cstddef>
@@ -295,7 +296,45 @@ void test_dispatch_table_pointers_match_explicit_overloads() {
 
 }  // namespace
 
+void test_mpnn_linear_dispatch(std::size_t m, std::size_t n, std::size_t k,
+                              bool with_bias) {
+  namespace mpnn = hikoboshi::modules::mpnn::detail;
+  const auto input = make_matrix(m, k, 31);
+  const auto weight = make_matrix(n, k, 37);
+  const auto bias = make_matrix(1, n, 41);
+  hikoboshi::modules::detail::Mpnn64LinearWeights weights{};
+  weights.weight = {weight.data(), weight.size()};
+  if (with_bias) weights.bias = {bias.data(), bias.size()};
+  std::vector<float> expected(m * n), actual(m * n);
+  if (hiko_d::active_gemm_parity_mode() == hiko_d::GemmParityMode::Fast) {
+    hiko_l::GemmScalarRequest request{};
+    request.lhs = input.data();
+    request.rhs = weight.data();
+    request.m = m; request.n = n; request.k = k;
+    hiko_l::gemm_nt_scalar_fast(request, expected.data());
+    if (with_bias) {
+      for (std::size_t i = 0; i < expected.size(); ++i)
+        expected[i] += bias[i % n];
+    }
+  } else {
+    mpnn::linear_nt_blocked4_inline(input.data(), weights, m, n, k,
+                                   expected.data());
+  }
+  mpnn::linear_nt_inline(input.data(), weights, m, n, k, actual.data());
+  if (!bit_equal(expected, actual)) fail("MPNN batched linear dispatch/bias");
+  for (std::size_t row = 0; row < m; ++row) {
+    mpnn::linear_row_nt_inline(input.data() + row * k, weights, n, k,
+                               actual.data() + row * n);
+  }
+  if (!bit_equal(expected, actual)) fail("MPNN single-row linear dispatch/bias");
+}
+
 int main() {
+  for (bool bias : {false, true}) {
+    test_mpnn_linear_dispatch(1, 5, 17, bias);
+    test_mpnn_linear_dispatch(7, 64, 192, bias);
+    test_mpnn_linear_dispatch(7, 64, 416, bias);
+  }
   // MPNN-64 hot shapes: encoder W_e style (large M, K=N=64),
   // 192->64 / 416->64 / 256->64 message + FFN W_out (n=64, k>=192),
   // FFN W_in (n=256, k=64), and similarity (Lq x 64 x Lt) for small L.

@@ -1,4 +1,5 @@
 #include <hikoboshi/modules/mpnn.hpp>
+#include <hikoboshi/algorithms/detail/mpnn_workspace_storage.hpp>
 #include <hikoboshi/weights/manifest.hpp>
 #include <hikoboshi/weights/provider.hpp>
 
@@ -31,21 +32,7 @@ struct Args {
   std::size_t coords_atom_count = 4;
 };
 
-struct OwnedWorkspace {
-  std::vector<float> ca_coordinates;
-  std::vector<float> residue_features;
-  std::vector<std::int32_t> neighbor_indices;
-  std::vector<float> neighbor_squared_distances;
-  std::vector<float> rbf_features;
-  std::vector<float> residue_state;
-  std::vector<float> gathered_state;
-  std::vector<float> edge_state;
-  std::vector<float> message_state;
-  std::vector<float> projected_message_state;
-  std::vector<float> residue_scratch;
-  std::vector<float> ffn_hidden;
-  hiko_d::Mpnn64Workspace view{};
-};
+using OwnedWorkspace = hikoboshi::algorithms::detail::Mpnn64WorkspaceStorage;
 
 [[noreturn]] void fail(const std::string& detail) {
   std::cerr << "mpnn64_real_parity: " << detail << "\n";
@@ -318,36 +305,8 @@ void prepare_coords5_from_fixture(
 }
 
 OwnedWorkspace make_workspace(const hiko_d::Mpnn64MemoryPlan& plan) {
-  OwnedWorkspace owned{};
-  owned.ca_coordinates.resize(hiko_d::mpnn64_ca_coordinate_count(plan));
-  owned.residue_features.resize(hiko_d::mpnn64_residue_feature_count(plan));
-  owned.neighbor_indices.resize(hiko_d::mpnn64_neighbor_slot_count(plan));
-  owned.neighbor_squared_distances.resize(hiko_d::mpnn64_neighbor_slot_count(plan));
-  owned.rbf_features.resize(hiko_d::mpnn64_neighbor_rbf_count(plan));
-  owned.residue_state.resize(hiko_d::mpnn64_residue_hidden_count(plan));
-  owned.gathered_state.resize(hiko_d::mpnn64_neighbor_hidden_count(plan));
-  owned.edge_state.resize(hiko_d::mpnn64_neighbor_hidden_count(plan));
-  owned.message_state.resize(hiko_d::mpnn64_neighbor_hidden_count(plan));
-  owned.projected_message_state.resize(hiko_d::mpnn64_neighbor_hidden_count(plan));
-  owned.residue_scratch.resize(hiko_d::mpnn64_residue_hidden_count(plan));
-  owned.ffn_hidden.resize(hiko_d::mpnn64_ffn_hidden_count(plan));
-  owned.view = {
-      plan,
-      {owned.ca_coordinates.data(), owned.ca_coordinates.size()},
-      {owned.residue_features.data(), owned.residue_features.size()},
-      {owned.neighbor_indices.data(), owned.neighbor_indices.size()},
-      {owned.neighbor_squared_distances.data(),
-       owned.neighbor_squared_distances.size()},
-      {owned.rbf_features.data(), owned.rbf_features.size()},
-      {owned.residue_state.data(), owned.residue_state.size()},
-      {owned.gathered_state.data(), owned.gathered_state.size()},
-      {owned.edge_state.data(), owned.edge_state.size()},
-      {owned.message_state.data(), owned.message_state.size()},
-      {owned.projected_message_state.data(),
-       owned.projected_message_state.size()},
-      {owned.residue_scratch.data(), owned.residue_scratch.size()},
-      {owned.ffn_hidden.data(), owned.ffn_hidden.size()},
-  };
+  OwnedWorkspace owned;
+  owned.prepare(plan);
   return owned;
 }
 
@@ -441,7 +400,7 @@ int main(int argc, char** argv) {
   request.residue_count = args.length;
   request.descriptor = descriptor;
   request.weights = prepared;
-  request.workspace = &workspace.view;
+  request.workspace = &workspace.workspace;
   request.residue_indices = residue_indices.data();
   request.chain_labels = chain_labels.data();
   request.intermediate_dumper.callback = write_tensor;

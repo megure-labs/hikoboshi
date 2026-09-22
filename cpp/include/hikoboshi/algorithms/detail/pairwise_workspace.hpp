@@ -6,6 +6,7 @@
 #include <vector>
 
 #include <hikoboshi/algorithms/detail/path_builder.hpp>
+#include <hikoboshi/algorithms/detail/mpnn_workspace_storage.hpp>
 #include <hikoboshi/modules/detail/mpnn_workspace.hpp>
 #include <hikoboshi/modules/mpnn.hpp>
 #include <hikoboshi/universal/alignment_path.hpp>
@@ -32,21 +33,7 @@ struct PairwiseWorkspacePlan {
 
 class PairwiseWorkspace {
  public:
-  struct OwnedMpnnWorkspace {
-    hikoboshi::modules::detail::Mpnn64Workspace workspace{};
-    std::vector<float> ca_coordinates;
-    std::vector<float> residue_features;
-    std::vector<std::int32_t> neighbor_indices;
-    std::vector<float> neighbor_squared_distances;
-    std::vector<float> rbf_features;
-    std::vector<float> residue_state;
-    std::vector<float> gathered_state;
-    std::vector<float> edge_state;
-    std::vector<float> message_state;
-    std::vector<float> projected_message_state;
-    std::vector<float> residue_scratch;
-    std::vector<float> ffn_hidden;
-  };
+  using OwnedMpnnWorkspace = Mpnn64WorkspaceStorage;
 
   // Soft Smith-Waterman backward-pass scratch. Forward DP cells reuse the
   // existing match_workspace_/insert_workspace_/delete_workspace_ buffers;

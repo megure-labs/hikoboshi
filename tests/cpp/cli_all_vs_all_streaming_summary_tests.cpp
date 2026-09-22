@@ -408,6 +408,67 @@ void test_streaming_zero_pair_count_emits_header_only() {
   }
 }
 
+void test_callbacks_once_per_record_and_stream_formatting() {
+  struct Counts { unsigned id = 0, fasta = 0, pdb = 0; } counts;
+  hiko::TsvStreamingAllVsAllSink::Callbacks callbacks{};
+  callbacks.user_data = &counts;
+  callbacks.include_dual_score_schema = true;
+  callbacks.pair_id = [](std::size_t, std::size_t, void* data) {
+    ++static_cast<Counts*>(data)->id; return std::string{"pair"};
+  };
+  callbacks.fasta_path = [](std::size_t, std::size_t, void* data) {
+    ++static_cast<Counts*>(data)->fasta; return std::string{"sequence.fa"};
+  };
+  callbacks.pdb_path = [](std::size_t, std::size_t, void* data) {
+    ++static_cast<Counts*>(data)->pdb; return std::string{"structure.pdb"};
+  };
+  std::ostringstream first, second;
+  first << std::hex;
+  hiko::TsvStreamingAllVsAllSink sink(
+      std::vector<std::ostream*>{nullptr, &first, &second, nullptr}, callbacks);
+  hiko::PairwiseResultRecord record{};
+  record.query_index = 15;
+  record.target_index = 16;
+  record.result.path.aligned_pairs = 17;
+  record.result.metrics.raw_sw_score = 1.23456789;
+  auto status = sink.receive(record);
+  if (status.code != hiko_u::StatusCode::Ok || counts.id != 1 ||
+      counts.fasta != 1 || counts.pdb != 1)
+    fail("callbacks must run once per record across all output destinations");
+  if (first.str().find("\nf\t10\tpair\t1.23457\t") == std::string::npos ||
+      second.str().find("\n15\t16\tpair\t1.23457\t") == std::string::npos)
+    fail("reused numeric fields must preserve output-specific integer formatting");
+  first.str({}); second.str({}); first << std::dec;
+  status = sink.receive(record);
+  if (status.code != hiko_u::StatusCode::Ok || counts.id != 2 ||
+      counts.fasta != 2 || counts.pdb != 2 || first.str() != second.str())
+    fail("identically configured outputs must receive identical reused fields");
+  hiko::TsvStreamingAllVsAllSink empty(
+      std::vector<std::ostream*>{nullptr, nullptr}, callbacks);
+  status = empty.receive(record);
+  if (status.code != hiko_u::StatusCode::Ok || counts.id != 2)
+    fail("null-only outputs must not invoke formatting callbacks");
+}
+
+void test_multi_output_failure_stops_publication() {
+  std::ostringstream bad, untouched;
+  hiko::TsvStreamingAllVsAllSink::Callbacks callbacks{};
+  unsigned calls = 0;
+  callbacks.user_data = &calls;
+  callbacks.pair_id = [](std::size_t, std::size_t, void* data) {
+    ++*static_cast<unsigned*>(data); return std::string{"pair"};
+  };
+  hiko::TsvStreamingAllVsAllSink sink(
+      std::vector<std::ostream*>{&bad, &untouched}, callbacks);
+  const auto header = untouched.str();
+  bad.setstate(std::ios::badbit);
+  hiko::PairwiseResultRecord record{};
+  const auto status = sink.receive(record);
+  if (status.code != hiko_u::StatusCode::Unavailable ||
+      untouched.str() != header || calls != 1)
+    fail("first failed output must stop later destinations and propagate failure");
+}
+
 }  // namespace
 
 int main() {
@@ -416,5 +477,7 @@ int main() {
   test_streaming_writes_to_multiple_outputs();
   test_soft_streaming_matches_buffered_embeddings();
   test_streaming_zero_pair_count_emits_header_only();
+  test_callbacks_once_per_record_and_stream_formatting();
+  test_multi_output_failure_stops_publication();
   return 0;
 }

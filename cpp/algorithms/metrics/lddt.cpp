@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <new>
 #include <vector>
 
@@ -80,45 +81,147 @@ struct DirectionalCounters {
   std::size_t pass_count = 0;
 };
 
+// Contact reuse is bounded per calling thread and keyed by consumed contents,
+// never by StructureView pointers. Callers may mutate or replace their buffers
+// between calls. Very large/dense structures retain the direct traversal.
+constexpr std::size_t kContactCacheEntries = 4;
+constexpr std::size_t kContactCacheMaxResidues = 4096;
+constexpr std::size_t kContactCacheMaxContacts = 32768;
+
+struct ReferenceContact {
+  std::uint32_t first;
+  std::uint32_t second;
+  double distance;
+};
+
+struct ReferenceContacts {
+  // Three float bit patterns and an observed flag for each residue.
+  std::vector<std::uint32_t> ca_snapshot;
+  std::vector<ReferenceContact> contacts;
+  double radius = 0.0;
+  bool valid = false;
+  bool prepared = false;
+  bool reuse_seen = false;
+  bool overflow = false;
+
+  bool matches(const StructureView& structure, double r0) const noexcept {
+    if (!valid || radius != r0 || ca_snapshot.size() != structure.residue_count * 4)
+      return false;
+    for (std::size_t i = 0; i < structure.residue_count; ++i) {
+      const bool observed = observed_ca(structure, i);
+      if (ca_snapshot[i * 4 + 3] != static_cast<std::uint32_t>(observed))
+        return false;
+      const std::size_t offset =
+          (i * hikoboshi::universal::kCanonicalAtomCount +
+           static_cast<std::size_t>(CanonicalAtom::CA)) * 3;
+      if (observed && std::memcmp(ca_snapshot.data() + i * 4,
+                                 structure.coordinates.data + offset,
+                                 3 * sizeof(float)) != 0)
+        return false;
+    }
+    return true;
+  }
+};
+
+ReferenceContacts* reference_contacts(const StructureView& structure,
+                                      double r0) noexcept {
+  if (structure.residue_count > kContactCacheMaxResidues || !std::isfinite(r0))
+    return nullptr;
+  struct Cache {
+    ReferenceContacts entries[kContactCacheEntries];
+    std::size_t next = 0;
+  };
+  thread_local Cache cache;
+  for (auto& entry : cache.entries) {
+    if (entry.matches(structure, r0)) {
+      entry.reuse_seen = true;
+      return &entry;
+    }
+  }
+  auto& entry = cache.entries[cache.next];
+  cache.next = (cache.next + 1) % kContactCacheEntries;
+  entry.valid = false;
+  entry.prepared = false;
+  entry.reuse_seen = false;
+  entry.overflow = false;
+  entry.contacts.clear();
+  const std::size_t n = structure.residue_count;
+  try {
+    entry.ca_snapshot.reserve(n * 4);
+    entry.ca_snapshot.resize(n * 4);
+    entry.contacts.reserve(std::min(kContactCacheMaxContacts,
+                                    n == 0 ? 0 : n * (n - 1) / 2));
+  } catch (const std::bad_alloc&) {
+    // Reuse is optional; failure to allocate it must not invalidate a metric.
+    return nullptr;
+  }
+  for (std::size_t i = 0; i < n; ++i) {
+    const bool observed = observed_ca(structure, i);
+    entry.ca_snapshot[i * 4 + 3] = static_cast<std::uint32_t>(observed);
+    const std::size_t offset =
+        (i * hikoboshi::universal::kCanonicalAtomCount +
+         static_cast<std::size_t>(CanonicalAtom::CA)) * 3;
+    if (observed)
+      std::memcpy(entry.ca_snapshot.data() + i * 4,
+                  structure.coordinates.data + offset, 3 * sizeof(float));
+  }
+  entry.radius = r0;
+  entry.valid = true;
+  return &entry;
+}
+
+void accumulate_contact(DirectionalCounters& counters,
+                        std::size_t i, std::size_t j, double d_ref,
+                        const StructureView& model,
+                        const std::int32_t* reference_to_model) noexcept {
+  ++counters.pair_count_in_R0;
+  const std::int32_t partner_i = reference_to_model[i];
+  const std::int32_t partner_j = reference_to_model[j];
+  if (partner_i == kUnaligned || partner_j == kUnaligned) return;
+  const std::size_t mi = static_cast<std::size_t>(partner_i);
+  const std::size_t mj = static_cast<std::size_t>(partner_j);
+  if (mi >= model.residue_count || mj >= model.residue_count ||
+      !observed_ca(model, mi) || !observed_ca(model, mj)) return;
+  ++counters.aligned_aligned_in_R0;
+  const double d_model = distance(ca_point(model, mi), ca_point(model, mj));
+  counters.pass_count += count_threshold_passes(std::fabs(d_ref - d_model));
+}
+
 DirectionalCounters accumulate_direction(
     const StructureView& reference,
     const StructureView& model,
     const std::int32_t* reference_to_model,
     double r0) noexcept {
   DirectionalCounters counters{};
+  ReferenceContacts* cached = reference_contacts(reference, r0);
+  if (cached != nullptr && cached->prepared) {
+    for (const auto& contact : cached->contacts)
+      accumulate_contact(counters, contact.first, contact.second,
+                         contact.distance, model, reference_to_model);
+    return counters;
+  }
   for (std::size_t i = 0; i < reference.residue_count; ++i) {
-    if (!observed_ca(reference, i)) {
-      continue;
-    }
+    if (!observed_ca(reference, i)) continue;
     const Point3 p_i = ca_point(reference, i);
     for (std::size_t j = i + 1; j < reference.residue_count; ++j) {
-      if (!observed_ca(reference, j)) {
-        continue;
+      if (!observed_ca(reference, j)) continue;
+      const double d_ref = distance(p_i, ca_point(reference, j));
+      if (d_ref > r0) continue;
+      if (cached != nullptr && cached->reuse_seen && !cached->overflow) {
+        if (cached->contacts.size() == kContactCacheMaxContacts) {
+          cached->contacts.clear();
+          cached->overflow = true;
+        } else {
+          // Capacity was reserved before traversal; this cannot allocate.
+          cached->contacts.push_back({static_cast<std::uint32_t>(i),
+                                      static_cast<std::uint32_t>(j), d_ref});
+        }
       }
-      const Point3 p_j = ca_point(reference, j);
-      const double d_ref = distance(p_i, p_j);
-      if (d_ref > r0) {
-        continue;
-      }
-      ++counters.pair_count_in_R0;
-
-      const std::int32_t partner_i = reference_to_model[i];
-      const std::int32_t partner_j = reference_to_model[j];
-      if (partner_i == kUnaligned || partner_j == kUnaligned) {
-        continue;
-      }
-      const std::size_t mi = static_cast<std::size_t>(partner_i);
-      const std::size_t mj = static_cast<std::size_t>(partner_j);
-      if (mi >= model.residue_count || mj >= model.residue_count ||
-          !observed_ca(model, mi) || !observed_ca(model, mj)) {
-        continue;
-      }
-
-      ++counters.aligned_aligned_in_R0;
-      const double d_model = distance(ca_point(model, mi), ca_point(model, mj));
-      counters.pass_count += count_threshold_passes(std::fabs(d_ref - d_model));
+      accumulate_contact(counters, i, j, d_ref, model, reference_to_model);
     }
   }
+  if (cached != nullptr)
+    cached->prepared = cached->reuse_seen && !cached->overflow;
   return counters;
 }
 

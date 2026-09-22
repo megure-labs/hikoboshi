@@ -7,7 +7,7 @@ import hikoboshi as hiko
 from helpers import require
 
 
-HIKOBOSHI_010_VERSION = (0, 1, 0, "")
+HIKOBOSHI_011_VERSION = (0, 1, 1, "")
 HIKOBOSHI_010_CPU_BACKENDS = ("scalar", "sse4", "avx2", "avx512", "neon", "sve")
 HIKOBOSHI_010_GPU_BACKENDS = ("cuda", "hip", "metal", "vulkan", "opencl")
 HIKOBOSHI_010_PIPELINE_FLAGS = {
@@ -57,7 +57,7 @@ def require_010_version() -> None:
         version["label"],
     )
     require(
-        observed == HIKOBOSHI_010_VERSION,
+        observed == HIKOBOSHI_011_VERSION,
         "capability introspection expectations must be updated for this release",
     )
 

@@ -1,3 +1,5 @@
+#include "../embedding_cache.hpp"
+#include "../summary_spool.hpp"
 #include <hikoboshi/api/engine.hpp>
 #include <hikoboshi/io/all_vs_all_layout.hpp>
 #include <hikoboshi/io/fasta_writer.hpp>
@@ -8,12 +10,17 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <cstdio>
+#include <memory>
+#include <sstream>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -117,11 +124,13 @@ void print_pair_list_usage(std::ostream& out) {
       << "options:\n"
       << "  --pairs FILE.tsv       two-column query_id<TAB>target_id TSV\n"
       << "  --fasta FILE.fa        named sequence FASTA source\n"
+      << "  --embedding-cache DIR  reuse structure encodings across jobs\n"
       << "  --summary PATH         write TSV summary\n"
       << "  --package NAME         compiled package ID or alias\n"
       << "  --mode hard|soft|both  alignment branch (default: hard)\n"
       << "  --temperature VALUE    soft Smith-Waterman temperature\n"
-      << "  --threads N         all-vs-all worker threads: 0 auto, 1 serial\n"
+      << "  --threads N         worker threads: 0 auto, 1 serial\n"
+      << "                      structure loading uses at most 32 workers\n"
       << "  --gap-open VALUE       affine gap-open score (overrides package default)\n"
       << "  --gap-extension VALUE  affine gap-extension score\n"
       << "  --output-dir DIR       write per-pair alignments/ and pdb/ artifacts\n"
@@ -133,6 +142,7 @@ struct PairListOptions {
   std::string fasta_path;
   std::string source_dir;
   std::string summary_path;
+  std::string embedding_cache_dir;
   std::string output_dir;
   double gap_open = 0.0;
   double gap_extension = 0.0;
@@ -260,6 +270,16 @@ hikoboshi::universal::Status parse_pair_list_options(int argc,
     const std::string_view arg{argv[index]};
     {
       std::string value;
+      if (parse_option_assignment(arg, "--embedding-cache", value) ||
+          is_option(arg, "--embedding-cache")) {
+        if (value.empty()) {
+          const auto status = option_value(index, argc, argv, value);
+          if (!status_ok(status)) return status;
+        }
+        if (value.empty()) return invalid_arguments("--embedding-cache requires a nonempty directory");
+        options.embedding_cache_dir = value;
+        continue;
+      }
       if (parse_option_assignment(arg, "--mode", value) ||
           is_option(arg, "--mode")) {
         if (value.empty()) {
@@ -408,6 +428,8 @@ hikoboshi::universal::Status parse_pair_list_options(int argc,
     positionals.emplace_back(arg);
   }
 
+  if (!options.embedding_cache_dir.empty() && !options.fasta_path.empty())
+    return invalid_arguments("--embedding-cache currently requires structure input");
   if (options.pairs_path.empty()) {
     return invalid_arguments("pair-list requires --pairs FILE.tsv");
   }
@@ -574,39 +596,6 @@ hikoboshi::universal::Status read_fasta_records(const std::string& path,
   return ok();
 }
 
-std::vector<std::string> pair_ids_from_input_pairs(
-    const std::vector<std::pair<std::string, std::string>>& pairs) {
-  std::vector<std::string> ids;
-  ids.reserve(pairs.size());
-  for (const auto& pair : pairs) {
-    ids.push_back(pair.first + "__" + pair.second);
-  }
-  return ids;
-}
-
-hikoboshi::universal::Status write_summary_file(
-    std::string_view path,
-    const hikoboshi::api::AllVsAllResult& result,
-    const std::vector<std::string>& pair_ids,
-    bool include_dual_score_schema,
-    const std::vector<std::string>& fasta_paths = {},
-    const std::vector<std::string>& pdb_paths = {}) {
-  if (path.empty()) {
-    return ok();
-  }
-  std::ofstream out{std::string{path}, std::ios::binary};
-  if (!out) {
-    return unavailable("pair-list summary path is not writable");
-  }
-  render_all_vs_all_summary(
-      out, result, pair_ids, fasta_paths, pdb_paths,
-      include_dual_score_schema);
-  if (!out) {
-    return unavailable("pair-list summary write failed");
-  }
-  return ok();
-}
-
 // Per-pair artifact emission for the structure route. Mirrors all-vs-all's
 // writer but drives the layout from the supplied pair list rather than an
 // i<j enumeration, using the existing per-pair path primitive.
@@ -618,35 +607,38 @@ hikoboshi::universal::Status write_pair_list_sequence_artifacts(
     const hikoboshi::api::AllVsAllResult& result,
     const std::vector<std::pair<std::string, std::string>>& input_pairs,
     const FastaRecords& fasta,
-    std::vector<std::string>& fasta_paths) {
+    std::vector<std::string>& fasta_paths,
+    std::size_t pair_offset) {
   fasta_paths.clear();
   if (options.output_dir.empty()) {
     return ok();
   }
-  std::error_code ec;
-  std::filesystem::create_directories(
-      std::filesystem::path{options.output_dir} / "alignments", ec);
-  if (ec) {
-    return hikoboshi::universal::unavailable_status(
-        "pair-list could not create the alignments output directory");
+  if (pair_offset == 0) {
+    std::error_code ec;
+    std::filesystem::create_directories(
+        std::filesystem::path{options.output_dir} / "alignments", ec);
+    if (ec) {
+      return hikoboshi::universal::unavailable_status(
+          "pair-list could not create the alignments output directory");
+    }
   }
   fasta_paths.reserve(result.records.size());
   for (std::size_t index = 0; index < result.records.size(); ++index) {
     const hikoboshi::api::PairwiseResultRecord& record = result.records[index];
     if (record.query_index >= fasta.sequences.size() ||
         record.target_index >= fasta.sequences.size() ||
-        index >= input_pairs.size()) {
+        index + pair_offset >= input_pairs.size()) {
       return hikoboshi::universal::internal_error_status(
           "pair-list sequence artifact index is out of range");
     }
     hikoboshi::io::ArtifactInputId q{};
     q.input_index = record.query_index;
-    q.source_path = input_pairs[index].first;
-    q.file_stem = input_pairs[index].first;
+    q.source_path = input_pairs[index + pair_offset].first;
+    q.file_stem = input_pairs[index + pair_offset].first;
     hikoboshi::io::ArtifactInputId t{};
     t.input_index = record.target_index;
-    t.source_path = input_pairs[index].second;
-    t.file_stem = input_pairs[index].second;
+    t.source_path = input_pairs[index + pair_offset].second;
+    t.file_stem = input_pairs[index + pair_offset].second;
     const hikoboshi::universal::Result<hikoboshi::io::PairArtifactPaths> paths =
         hikoboshi::io::pair_artifact_paths(options.output_dir, q, t);
     if (!status_ok(paths.status)) {
@@ -655,12 +647,12 @@ hikoboshi::universal::Status write_pair_list_sequence_artifacts(
     const std::string& qseq = fasta.sequences[record.query_index];
     const std::string& tseq = fasta.sequences[record.target_index];
     hikoboshi::io::FastaInputMetadata qmeta{};
-    qmeta.input_id = input_pairs[index].first;
+    qmeta.input_id = input_pairs[index + pair_offset].first;
     qmeta.residue_codes = {qseq.data(), qseq.size()};
     qmeta.residue_count = qseq.size();
     qmeta.has_sequence_metadata = true;
     hikoboshi::io::FastaInputMetadata tmeta{};
-    tmeta.input_id = input_pairs[index].second;
+    tmeta.input_id = input_pairs[index + pair_offset].second;
     tmeta.residue_codes = {tseq.data(), tseq.size()};
     tmeta.residue_count = tseq.size();
     tmeta.has_sequence_metadata = true;
@@ -680,45 +672,48 @@ hikoboshi::universal::Status write_pair_list_artifacts(
     const std::vector<std::pair<std::string, std::string>>& input_pairs,
     const std::vector<hikoboshi::universal::StructureView>& views,
     std::vector<std::string>& fasta_paths,
-    std::vector<std::string>& pdb_paths) {
+    std::vector<std::string>& pdb_paths,
+    std::size_t pair_offset) {
   fasta_paths.clear();
   pdb_paths.clear();
   if (options.output_dir.empty()) {
     return ok();
   }
-  std::error_code ec;
-  std::filesystem::create_directories(
-      std::filesystem::path{options.output_dir} / "alignments", ec);
-  if (ec) {
-    return hikoboshi::universal::unavailable_status(
-        "pair-list could not create the alignments output directory");
-  }
-  std::filesystem::create_directories(
-      std::filesystem::path{options.output_dir} / "pdb", ec);
-  if (ec) {
-    return hikoboshi::universal::unavailable_status(
-        "pair-list could not create the pdb output directory");
+  if (pair_offset == 0) {
+    std::error_code ec;
+    std::filesystem::create_directories(
+        std::filesystem::path{options.output_dir} / "alignments", ec);
+    if (ec) {
+      return hikoboshi::universal::unavailable_status(
+          "pair-list could not create the alignments output directory");
+    }
+    std::filesystem::create_directories(
+        std::filesystem::path{options.output_dir} / "pdb", ec);
+    if (ec) {
+      return hikoboshi::universal::unavailable_status(
+          "pair-list could not create the pdb output directory");
+    }
   }
   fasta_paths.reserve(result.records.size());
   pdb_paths.reserve(result.records.size());
   for (std::size_t index = 0; index < result.records.size(); ++index) {
     const hikoboshi::api::PairwiseResultRecord& record = result.records[index];
     if (record.query_index >= views.size() ||
-        record.target_index >= views.size() || index >= input_pairs.size()) {
+        record.target_index >= views.size() || index + pair_offset >= input_pairs.size()) {
       return hikoboshi::universal::internal_error_status(
           "pair-list artifact index is out of range");
     }
     const std::string q_stem =
-        hikoboshi::io::file_stem_from_path(input_pairs[index].first);
+        hikoboshi::io::file_stem_from_path(input_pairs[index + pair_offset].first);
     const std::string t_stem =
-        hikoboshi::io::file_stem_from_path(input_pairs[index].second);
+        hikoboshi::io::file_stem_from_path(input_pairs[index + pair_offset].second);
     hikoboshi::io::ArtifactInputId q{};
     q.input_index = record.query_index;
-    q.source_path = input_pairs[index].first;
+    q.source_path = input_pairs[index + pair_offset].first;
     q.file_stem = q_stem;
     hikoboshi::io::ArtifactInputId t{};
     t.input_index = record.target_index;
-    t.source_path = input_pairs[index].second;
+    t.source_path = input_pairs[index + pair_offset].second;
     t.file_stem = t_stem;
     const hikoboshi::universal::Result<hikoboshi::io::PairArtifactPaths> paths =
         hikoboshi::io::pair_artifact_paths(options.output_dir, q, t);
@@ -745,31 +740,85 @@ hikoboshi::universal::Status write_pair_list_artifacts(
   return ok();
 }
 
-int finish_pair_list(const PairListOptions& options,
-                     const hikoboshi::api::AllVsAllResult& result,
-                     const std::vector<std::pair<std::string, std::string>>&
-                         input_pairs,
-                     const std::vector<std::string>& fasta_paths_in = {},
-                     const std::vector<std::string>& pdb_paths_in = {}) {
-  const std::vector<std::string> pair_ids =
-      pair_ids_from_input_pairs(input_pairs);
-  const std::vector<std::string> empty_paths;
-  const std::vector<std::string>& art_fasta =
-      fasta_paths_in.empty() ? empty_paths : fasta_paths_in;
-  const std::vector<std::string>& art_pdb =
-      pdb_paths_in.empty() ? empty_paths : pdb_paths_in;
-  const bool include_soft_schema =
-      alignment_mode_runs_soft(options.alignment_mode);
-  render_all_vs_all_summary(std::cout, result, pair_ids, art_fasta,
-                            art_pdb, include_soft_schema);
-  const hikoboshi::universal::Status status =
-      write_summary_file(options.summary_path, result, pair_ids,
-                         include_soft_schema, art_fasta, art_pdb);
-  if (!status_ok(status)) {
-    return report_status(status);
+
+class CliPairListSink final : public hikoboshi::api::PairwiseResultSink {
+ public:
+  CliPairListSink(const PairListOptions& options,
+      const std::vector<std::pair<std::string, std::string>>& pairs,
+      const std::vector<hikoboshi::universal::StructureView>* structures,
+      const FastaRecords* sequences)
+      : options_(options), pairs_(pairs), structures_(structures), sequences_(sequences),
+        stdout_sink_(stdout_rows_, callbacks()) {
+    one_.records.resize(1);
   }
-  return 0;
-}
+  hikoboshi::universal::Status prepare() {
+    if (!stdout_spool_.valid())
+      return unavailable("pair-list temporary summary could not be created");
+    return ok();
+  }
+  hikoboshi::universal::Status receive(const hikoboshi::api::PairwiseResultRecord& record) override {
+    if (index_ >= pairs_.size()) return invalid_arguments("pair-list emitted too many records");
+    hikoboshi::universal::Status status = ok();
+    if (!options_.output_dir.empty()) {
+      one_.records[0] = record;
+      status = structures_ ? write_pair_list_artifacts(options_, one_, pairs_, *structures_, fasta_paths_, pdb_paths_, index_)
+          : write_pair_list_sequence_artifacts(options_, one_, pairs_, *sequences_, fasta_paths_, index_);
+      if (!status_ok(status)) return status;
+    }
+    status = stdout_sink_.receive(record);
+    if (!status_ok(status)) return status;
+    status = stdout_spool_.append(stdout_rows_);
+    if (!status_ok(status)) return status;
+    ++index_;
+    return ok();
+  }
+  int finish() {
+    auto status = stdout_spool_.append(stdout_rows_); // Header for empty input.
+    if (status_ok(status)) status = stdout_spool_.publish(std::cout);
+    if (!status_ok(status)) return report_status(status);
+    if (!options_.summary_path.empty()) {
+      std::ofstream out(options_.summary_path, std::ios::binary);
+      if (!out) return report_status(unavailable("pair-list summary path is not writable"));
+      status = stdout_spool_.publish(out);
+      if (!status_ok(status)) return report_status(status);
+      out.flush();
+      if (!out) return report_status(unavailable("pair-list summary write failed"));
+    }
+    return 0;
+  }
+ private:
+  hikoboshi::api::TsvStreamingAllVsAllSink::Callbacks callbacks() {
+    hikoboshi::api::TsvStreamingAllVsAllSink::Callbacks cb{};
+    cb.user_data = this;
+    cb.include_dual_score_schema = alignment_mode_runs_soft(options_.alignment_mode);
+    cb.pair_id = [](std::size_t, std::size_t, void* context) {
+      const auto& self = *static_cast<CliPairListSink*>(context);
+      const auto& pair = self.pairs_[self.index_];
+      return pair.first + "__" + pair.second;
+    };
+    cb.fasta_path = [](std::size_t, std::size_t, void* context) {
+      const auto& v = static_cast<CliPairListSink*>(context)->fasta_paths_;
+      return v.empty() ? std::string{} : v[0];
+    };
+    cb.pdb_path = [](std::size_t, std::size_t, void* context) {
+      const auto& v = static_cast<CliPairListSink*>(context)->pdb_paths_;
+      return v.empty() ? std::string{} : v[0];
+    };
+    return cb;
+  }
+  const PairListOptions& options_;
+  const std::vector<std::pair<std::string, std::string>>& pairs_;
+  const std::vector<hikoboshi::universal::StructureView>* structures_;
+  const FastaRecords* sequences_;
+  std::size_t index_ = 0;
+  hikoboshi::api::AllVsAllResult one_;
+  std::vector<std::string> fasta_paths_, pdb_paths_;
+  std::ostringstream stdout_rows_;
+  SummarySpool stdout_spool_{{"pair-list temporary summary write failed",
+                             "pair-list temporary summary rewind failed",
+                             "pair-list summary write failed"}};
+  hikoboshi::api::TsvStreamingAllVsAllSink stdout_sink_;
+};
 
 hikoboshi::universal::Result<hikoboshi::universal::PackageHandle>
 resolve_pair_list_sequence_package(const PairListOptions& options) {
@@ -832,18 +881,11 @@ int run_sequence_pair_list(
   request.options.mode = options.alignment_mode;
   request.options.temperature = options.temperature;
 
-  const hikoboshi::universal::Result<hikoboshi::api::AllVsAllResult> result =
-      engine.value.collect_pair_list(request);
-  if (!status_ok(result.status)) {
-    return report_status(result.status);
-  }
-  std::vector<std::string> seq_artifact_fasta;
-  status = write_pair_list_sequence_artifacts(options, result.value, pairs,
-                                              fasta, seq_artifact_fasta);
-  if (!status_ok(status)) {
-    return report_status(status);
-  }
-  return finish_pair_list(options, result.value, pairs, seq_artifact_fasta);
+  CliPairListSink sink(options, pairs, nullptr, &fasta);
+  status = sink.prepare();
+  if (status_ok(status)) status = engine.value.pair_list(request, sink);
+  if (!status_ok(status)) return report_status(status);
+  return sink.finish();
 }
 
 int run_structure_pair_list(
@@ -857,19 +899,50 @@ int run_structure_pair_list(
     return report_status(status);
   }
 
-  std::vector<hikoboshi::io::LoadedStructure> loaded;
-  std::vector<hikoboshi::universal::StructureView> views;
-  loaded.reserve(files.size());
-  views.reserve(files.size());
-  for (const std::filesystem::path& path : files) {
-    hikoboshi::universal::Result<hikoboshi::io::LoadedStructure> structure =
-        hikoboshi::io::load_structure_from_file(path.string());
-    if (!status_ok(structure.status)) {
-      return report_status(structure.status);
+  // Keep a sparse source view table in the full sorted directory order, so
+  // public result indices retain their meaning while only referenced owners
+  // hold parsed structures. Names are derived by the loader's own ID rule.
+  std::vector<std::string> ids;
+  ids.reserve(files.size());
+  for (const auto& path : files)
+    ids.push_back(hikoboshi::io::structure_input_id_from_path(path.string()));
+  std::unordered_map<std::string_view, std::size_t> by_id;
+  std::unordered_set<std::string_view> ambiguous;
+  for (std::size_t index = 0; index < ids.size(); ++index)
+    if (!by_id.emplace(ids[index], index).second) ambiguous.insert(ids[index]);
+  std::vector<bool> referenced(files.size(), false);
+  // Validate every requested ID before parsing. Select the first bad ID in
+  // pair-list query/target order, as the engine's resolver does.
+  for (const auto& pair : pairs) {
+    for (const auto* id : {&pair.first, &pair.second}) {
+      if (ambiguous.count(*id)) {
+        const std::string detail = "pair-list source contains a duplicate protein ID: '" + *id + "'";
+        return report_status(invalid_arguments(detail.c_str()));
+      }
+      const auto found = by_id.find(*id);
+      if (found == by_id.end()) {
+        const std::string detail = "pair-list ID not found in the input source: '" + *id + "'";
+        return report_status(invalid_arguments(detail.c_str()));
+      }
+      referenced[found->second] = true;
     }
-    loaded.push_back(std::move(structure.value));
-    views.push_back(loaded.back().view());
   }
+  std::vector<std::string> paths;
+  std::vector<std::size_t> original_indices;
+  std::vector<hikoboshi::universal::StructureView> views(files.size());
+  for (std::size_t index = 0; index < files.size(); ++index) {
+    views[index].input_id = ids[index];
+    if (referenced[index]) {
+      paths.push_back(files[index].string());
+      original_indices.push_back(index);
+    }
+  }
+  std::vector<hikoboshi::io::LoadedStructure> loaded;
+  status = hikoboshi::io::load_structures_from_files(
+      {paths.data(), paths.size()}, loaded, options.thread_count);
+  if (!status_ok(status)) return report_status(status);
+  for (std::size_t index = 0; index < loaded.size(); ++index)
+    views[original_indices[index]] = loaded[index].view();
 
   hikoboshi::universal::Result<hikoboshi::universal::PackageHandle> package{};
   if (options.package_selected) {
@@ -881,9 +954,10 @@ int run_structure_pair_list(
     return report_status(package.status);
   }
 
-  const hikoboshi::universal::Result<hikoboshi::api::Engine> engine =
-      make_engine_with_package(package.value, hikoboshi::universal::Backend::Auto,
-                               options.thread_count);
+  hikoboshi::io::DiskStructureEmbeddingCache cache;
+  const auto engine = make_cached_structure_engine(package.value,
+      hikoboshi::universal::Backend::Auto, options.thread_count,
+      options.embedding_cache_dir, cache);
   if (!status_ok(engine.status)) {
     return report_status(engine.status);
   }
@@ -893,20 +967,12 @@ int run_structure_pair_list(
   request.pairs = pairs;
   request.options.mode = options.alignment_mode;
   request.options.temperature = options.temperature;
-  const hikoboshi::universal::Result<hikoboshi::api::AllVsAllResult> result =
-      engine.value.collect_pair_list(request);
-  if (!status_ok(result.status)) {
-    return report_status(result.status);
-  }
-  std::vector<std::string> artifact_fasta;
-  std::vector<std::string> artifact_pdb;
-  status = write_pair_list_artifacts(options, result.value, pairs, views,
-                                     artifact_fasta, artifact_pdb);
-  if (!status_ok(status)) {
-    return report_status(status);
-  }
-  return finish_pair_list(options, result.value, pairs, artifact_fasta,
-                          artifact_pdb);
+  CliPairListSink sink(options, pairs, &views, nullptr);
+  status = sink.prepare();
+  if (status_ok(status)) status = engine.value.pair_list(request, sink);
+  if (!options.embedding_cache_dir.empty()) report_embedding_cache_statistics(cache);
+  if (!status_ok(status)) return report_status(status);
+  return sink.finish();
 }
 
 }  // namespace

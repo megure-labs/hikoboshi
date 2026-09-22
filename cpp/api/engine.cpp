@@ -7,6 +7,7 @@
 #include <hikoboshi/universal/detail/thread_pool.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -823,64 +824,6 @@ algorithms::detail::PairwiseWorkspacePlan structure_plan(
   return plan;
 }
 
-struct DirectMpnn64Workspace {
-  hikoboshi::modules::detail::Mpnn64Workspace workspace{};
-  std::vector<float> ca_coordinates;
-  std::vector<float> residue_features;
-  std::vector<std::int32_t> neighbor_indices;
-  std::vector<float> neighbor_squared_distances;
-  std::vector<float> rbf_features;
-  std::vector<float> residue_state;
-  std::vector<float> gathered_state;
-  std::vector<float> edge_state;
-  std::vector<float> message_state;
-  std::vector<float> projected_message_state;
-  std::vector<float> residue_scratch;
-  std::vector<float> ffn_hidden;
-};
-
-template <typename T>
-void assign_direct_span(std::vector<T>& storage,
-                        universal::Span<T>& span) noexcept {
-  span = {storage.data(), storage.size()};
-}
-
-void prepare_direct_mpnn64_workspace(
-    DirectMpnn64Workspace& owned,
-    const hikoboshi::modules::detail::Mpnn64MemoryPlan& plan) {
-  namespace pmd = hikoboshi::modules::detail;
-  owned.workspace.plan = plan;
-  owned.ca_coordinates.resize(pmd::mpnn64_ca_coordinate_count(plan));
-  owned.residue_features.resize(pmd::mpnn64_residue_feature_count(plan));
-  owned.neighbor_indices.resize(pmd::mpnn64_neighbor_slot_count(plan));
-  owned.neighbor_squared_distances.resize(
-      pmd::mpnn64_neighbor_slot_count(plan));
-  owned.rbf_features.resize(pmd::mpnn64_neighbor_rbf_count(plan));
-  owned.residue_state.resize(pmd::mpnn64_residue_hidden_count(plan));
-  owned.gathered_state.resize(pmd::mpnn64_neighbor_hidden_count(plan));
-  owned.edge_state.resize(pmd::mpnn64_neighbor_hidden_count(plan));
-  owned.message_state.resize(pmd::mpnn64_neighbor_hidden_count(plan));
-  owned.projected_message_state.resize(
-      pmd::mpnn64_neighbor_hidden_count(plan));
-  owned.residue_scratch.resize(pmd::mpnn64_residue_hidden_count(plan));
-  owned.ffn_hidden.resize(pmd::mpnn64_ffn_hidden_count(plan));
-
-  assign_direct_span(owned.ca_coordinates, owned.workspace.ca_coordinates);
-  assign_direct_span(owned.residue_features, owned.workspace.residue_features);
-  assign_direct_span(owned.neighbor_indices, owned.workspace.neighbor_indices);
-  assign_direct_span(owned.neighbor_squared_distances,
-                     owned.workspace.neighbor_squared_distances);
-  assign_direct_span(owned.rbf_features, owned.workspace.rbf_features);
-  assign_direct_span(owned.residue_state, owned.workspace.residue_state);
-  assign_direct_span(owned.gathered_state, owned.workspace.gathered_state);
-  assign_direct_span(owned.edge_state, owned.workspace.edge_state);
-  assign_direct_span(owned.message_state, owned.workspace.message_state);
-  assign_direct_span(owned.projected_message_state,
-                     owned.workspace.projected_message_state);
-  assign_direct_span(owned.residue_scratch, owned.workspace.residue_scratch);
-  assign_direct_span(owned.ffn_hidden, owned.workspace.ffn_hidden);
-}
-
 hikoboshi::modules::detail::Mpnn64MemoryPlan direct_mpnn64_plan(
     const decltype(mpnn64_descriptor())& descriptor,
     std::size_t residue_count) noexcept {
@@ -900,11 +843,10 @@ universal::Result<std::vector<float>> encode_mpnn64_structure_direct(
   const std::size_t value_count =
       structure.residue_count * descriptor.hidden_dimension;
   std::vector<float> embeddings;
-  DirectMpnn64Workspace workspace;
+  algorithms::detail::Mpnn64WorkspaceStorage workspace;
   try {
     embeddings.assign(value_count, 0.0F);
-    prepare_direct_mpnn64_workspace(
-        workspace, direct_mpnn64_plan(descriptor, structure.residue_count));
+    workspace.prepare(direct_mpnn64_plan(descriptor, structure.residue_count));
   } catch (const std::bad_alloc&) {
     return {universal::unavailable_status(
                 "MPNN direct encode workspace allocation failed"),
@@ -2011,6 +1953,33 @@ class CollectingPairListSink final : public algorithms::PairwiseResultSink {
   std::size_t next_index_ = 0;
 };
 
+// Convert one reusable record and restore indices into the caller's source.
+class ForwardingPairListSink final : public algorithms::PairwiseResultSink {
+ public:
+  ForwardingPairListSink(hikoboshi::api::PairwiseResultSink& downstream,
+                        const std::vector<std::size_t>& original_index,
+                        const AlignmentOptions& alignment,
+                        GapOverrideContext context)
+      : downstream_(downstream), original_index_(original_index),
+        alignment_(alignment), context_(context) {}
+  universal::Status receive(const algorithms::PairwiseResultRecord& record) override {
+    if (record.query_index >= original_index_.size() ||
+        record.target_index >= original_index_.size())
+      return universal::internal_error_status(
+          "pair-list record references an unknown compacted protein index");
+    assign_api_record(record, alignment_, context_, record_);
+    record_.query_index = original_index_[record.query_index];
+    record_.target_index = original_index_[record.target_index];
+    return downstream_.receive(record_);
+  }
+ private:
+  hikoboshi::api::PairwiseResultSink& downstream_;
+  const std::vector<std::size_t>& original_index_;
+  AlignmentOptions alignment_;
+  GapOverrideContext context_;
+  PairwiseResultRecord record_{};
+};
+
 // Drive a resolved pair-list request through the algorithm layer and
 // collect the records. `run` invokes the route's `run_pair_list_*` entry
 // with the supplied sink.
@@ -2021,8 +1990,18 @@ universal::Result<AllVsAllResult> finish_pair_list(
     std::size_t max_result_step_count,
     const AlignmentOptions& alignment,
     GapOverrideContext gap_override_ctx,
+    PairwiseResultSink* downstream,
     RunFn&& run) {
   AllVsAllResult result{};
+  if (downstream != nullptr) {
+    ForwardingPairListSink sink(*downstream, original_index, alignment, gap_override_ctx);
+    try {
+      return {run(sink), std::move(result)};
+    } catch (const std::bad_alloc&) {
+      return universal::result_from_status<AllVsAllResult>(
+          universal::unavailable_status("pair-list streaming allocation failed"));
+    }
+  }
   CollectingPairListSink sink(result, original_index, input_pair_count,
                               max_result_step_count, alignment,
                               gap_override_ctx);
@@ -2046,7 +2025,8 @@ universal::Result<AllVsAllResult> collect_pair_list_structures_common(
     const AllVsAllOptions& options,
     const EngineConfig& config,
     EngineThreadingState* threading_state,
-    universal::PackageInputKind required_route) {
+    universal::PackageInputKind required_route,
+    PairwiseResultSink* downstream) {
   universal::Result<universal::WeightsHandle> weights =
       resolve_structure_package_weights(config, required_route);
   if (!universal::is_ok(weights.status)) {
@@ -2092,6 +2072,7 @@ universal::Result<AllVsAllResult> collect_pair_list_structures_common(
   algorithm_request.structures = {compacted.data(), compacted.size()};
   algorithm_request.descriptor = mpnn64_descriptor();
   algorithm_request.weights = prepared_weights(weights.value);
+  algorithm_request.embedding_cache = config.structure_embedding_cache;
   algorithm_request.pairs = {compacted_pairs.data(), compacted_pairs.size()};
   algorithm_request.max_query_length = axis_maxima.max_query_length;
   algorithm_request.max_target_length = axis_maxima.max_target_length;
@@ -2121,7 +2102,7 @@ universal::Result<AllVsAllResult> collect_pair_list_structures_common(
       threading_plan);
   return finish_pair_list(
       original_index, pairs.size(), max_result_step_count, options.alignment,
-      gap_override_ctx,
+      gap_override_ctx, downstream,
       [&](algorithms::PairwiseResultSink& sink) {
         return algorithms::run_pair_list_structures(algorithm_request, sink,
                                                     threading.pool,
@@ -2250,6 +2231,7 @@ universal::Status Engine::all_vs_all(const AllVsAllStructureRequest& request,
   algorithm_request.structures = request.structures;
   algorithm_request.descriptor = mpnn64_descriptor();
   algorithm_request.weights = prepared_weights(weights.value);
+  algorithm_request.embedding_cache = config_.structure_embedding_cache;
   const ResolvedAlignmentOptions resolved_alignment =
       config_.package.descriptor != nullptr
           ? resolve_alignment_against_package(
@@ -2334,6 +2316,7 @@ universal::Status Engine::all_vs_all(const AllVsAllCoordsRequest& request,
   algorithm_request.structures = {structures.data(), structures.size()};
   algorithm_request.descriptor = mpnn64_descriptor();
   algorithm_request.weights = prepared_weights(weights.value);
+  algorithm_request.embedding_cache = config_.structure_embedding_cache;
   const ResolvedAlignmentOptions resolved_alignment =
       config_.package.descriptor != nullptr
           ? resolve_alignment_against_package(
@@ -2628,13 +2611,53 @@ universal::Result<AllVsAllResult> Engine::collect_all_vs_all(
   return {status, result};
 }
 
+universal::Result<AllVsAllResult> Engine::collect_pair_list(
+    const PairListStructureRequest& request) const {
+  return run_pair_list(request, nullptr);
+}
+
+universal::Status Engine::pair_list(
+    const PairListStructureRequest& request, PairwiseResultSink& sink) const {
+  return run_pair_list(request, &sink).status;
+}
+
+universal::Result<AllVsAllResult> Engine::collect_pair_list(
+    const PairListCoordsRequest& request) const {
+  return run_pair_list(request, nullptr);
+}
+
+universal::Status Engine::pair_list(
+    const PairListCoordsRequest& request, PairwiseResultSink& sink) const {
+  return run_pair_list(request, &sink).status;
+}
+
+universal::Result<AllVsAllResult> Engine::collect_pair_list(
+    const PairListEmbeddingRequest& request) const {
+  return run_pair_list(request, nullptr);
+}
+
+universal::Status Engine::pair_list(
+    const PairListEmbeddingRequest& request, PairwiseResultSink& sink) const {
+  return run_pair_list(request, &sink).status;
+}
+
+universal::Result<AllVsAllResult> Engine::collect_pair_list(
+    const PairListSequenceRequest& request) const {
+  return run_pair_list(request, nullptr);
+}
+
+universal::Status Engine::pair_list(
+    const PairListSequenceRequest& request, PairwiseResultSink& sink) const {
+  return run_pair_list(request, &sink).status;
+}
+
 // Pair-list engine entries (npc1b). Each route dedups the caller's
 // (query_id, target_id) string pairs into a unique protein set, encodes
 // that set once through the algorithm layer, aligns exactly the listed
 // pairs, and collects one record per input pair in input order. See
 // `docs/charters/PAIR_LIST_CHARTER.md`.
-universal::Result<AllVsAllResult> Engine::collect_pair_list(
-    const PairListStructureRequest& request) const {
+universal::Result<AllVsAllResult> Engine::run_pair_list(
+    const PairListStructureRequest& request, PairwiseResultSink* downstream) const {
   const universal::Status axes = validate_engine_axes(config_);
   if (!universal::is_ok(axes)) {
     return universal::result_from_status<AllVsAllResult>(axes);
@@ -2668,11 +2691,11 @@ universal::Result<AllVsAllResult> Engine::collect_pair_list(
       request.structures, {source_ids.data(), source_ids.size()},
       request.pairs, request.options, config_,
       static_cast<EngineThreadingState*>(threading_.get()),
-      universal::PackageInputKind::StructureBackboneAtoms);
+      universal::PackageInputKind::StructureBackboneAtoms, downstream);
 }
 
-universal::Result<AllVsAllResult> Engine::collect_pair_list(
-    const PairListCoordsRequest& request) const {
+universal::Result<AllVsAllResult> Engine::run_pair_list(
+    const PairListCoordsRequest& request, PairwiseResultSink* downstream) const {
   const universal::Status axes = validate_engine_axes(config_);
   if (!universal::is_ok(axes)) {
     return universal::result_from_status<AllVsAllResult>(axes);
@@ -2715,11 +2738,11 @@ universal::Result<AllVsAllResult> Engine::collect_pair_list(
       {structures.data(), structures.size()},
       {source_ids.data(), source_ids.size()}, request.pairs, request.options,
       config_, static_cast<EngineThreadingState*>(threading_.get()),
-      universal::PackageInputKind::CoordsBackbone);
+      universal::PackageInputKind::CoordsBackbone, downstream);
 }
 
-universal::Result<AllVsAllResult> Engine::collect_pair_list(
-    const PairListEmbeddingRequest& request) const {
+universal::Result<AllVsAllResult> Engine::run_pair_list(
+    const PairListEmbeddingRequest& request, PairwiseResultSink* downstream) const {
   const universal::Status axes = validate_engine_axes(config_);
   if (!universal::is_ok(axes)) {
     return universal::result_from_status<AllVsAllResult>(axes);
@@ -2805,14 +2828,14 @@ universal::Result<AllVsAllResult> Engine::collect_pair_list(
 
   return finish_pair_list(
       original_index, request.pairs.size(), max_result_step_count,
-      request.options.alignment, gap_override_ctx,
+      request.options.alignment, gap_override_ctx, downstream,
       [&](algorithms::PairwiseResultSink& sink) {
         return algorithms::run_pair_list_embeddings(algorithm_request, sink);
       });
 }
 
-universal::Result<AllVsAllResult> Engine::collect_pair_list(
-    const PairListSequenceRequest& request) const {
+universal::Result<AllVsAllResult> Engine::run_pair_list(
+    const PairListSequenceRequest& request, PairwiseResultSink* downstream) const {
   const universal::Status axes = validate_engine_axes(config_);
   if (!universal::is_ok(axes)) {
     return universal::result_from_status<AllVsAllResult>(axes);
@@ -2928,7 +2951,7 @@ universal::Result<AllVsAllResult> Engine::collect_pair_list(
       threading_plan);
   return finish_pair_list(
       original_index, request.pairs.size(), max_result_step_count,
-      request.options.alignment, gap_override_ctx,
+      request.options.alignment, gap_override_ctx, downstream,
       [&](algorithms::PairwiseResultSink& sink) {
         return algorithms::run_pair_list_sequences(algorithm_request, sink,
                                                    threading.pool,
@@ -3015,57 +3038,56 @@ universal::MetricValue summary_sw_per_length(
       static_cast<double>(result.path.aligned_pairs));
 }
 
-void write_summary_callback_column(std::ostream& out,
-                                   std::string (*callback)(std::size_t,
-                                                           std::size_t,
-                                                           void*),
-                                   std::size_t query_index,
-                                   std::size_t target_index,
-                                   void* user_data) {
-  if (callback != nullptr) {
-    out << callback(query_index, target_index, user_data);
+struct FormattedSummaryRecord {
+  std::string pair_id, fasta_path, pdb_path, raw_score;
+  std::array<std::string, 4> soft;
+  std::array<std::string, 14> metrics;
+};
+
+FormattedSummaryRecord format_summary_record(
+    const PairwiseResultRecord& record,
+    const TsvStreamingAllVsAllSink::Callbacks& cb) {
+  const auto& metrics = record.result.metrics;
+  FormattedSummaryRecord row;
+  if (cb.pair_id) row.pair_id = cb.pair_id(record.query_index, record.target_index, cb.user_data);
+  row.raw_score = format_summary_double(metrics.raw_sw_score);
+  if (cb.include_dual_score_schema) {
+    row.soft = {format_summary_metric(metrics.soft_sw_score),
+        format_summary_metric(summary_sw_per_length(record.result, metrics.coverage_query)),
+        format_summary_metric(summary_sw_per_length(record.result, metrics.coverage_target)),
+        format_summary_metric(summary_sw_per_aligned(record.result))};
   }
+  row.metrics = {
+      format_summary_metric(metrics.coverage_query),
+      format_summary_metric(metrics.coverage_target),
+      format_summary_metric(metrics.coverage_mean),
+      format_summary_metric(metrics.identity),
+      format_summary_metric(metrics.rmsd),
+      format_summary_metric(metrics.tm_score_query),
+      format_summary_metric(metrics.tm_score_target),
+      format_summary_metric(metrics.lddt),
+      format_summary_metric(metrics.lddt_byA),
+      format_summary_metric(metrics.lddt_byB),
+      format_summary_metric(metrics.lddt_aln),
+      format_summary_metric(metrics.coverage_byA),
+      format_summary_metric(metrics.coverage_byB),
+      format_summary_metric(metrics.ecs)};
+  if (cb.fasta_path) row.fasta_path = cb.fasta_path(record.query_index, record.target_index, cb.user_data);
+  if (cb.pdb_path) row.pdb_path = cb.pdb_path(record.query_index, record.target_index, cb.user_data);
+  return row;
 }
 
 void write_summary_record(std::ostream& out,
                           const PairwiseResultRecord& record,
-                          const TsvStreamingAllVsAllSink::Callbacks& cb) {
-  const PairwiseMetrics& metrics = record.result.metrics;
-  out << record.query_index << '\t' << record.target_index << '\t';
-  write_summary_callback_column(out, cb.pair_id, record.query_index,
-                                record.target_index, cb.user_data);
-  out << '\t' << format_summary_double(metrics.raw_sw_score);
-  if (cb.include_dual_score_schema) {
-    out << '\t' << format_summary_metric(metrics.soft_sw_score) << '\t'
-        << format_summary_metric(
-               summary_sw_per_length(record.result, metrics.coverage_query))
-        << '\t'
-        << format_summary_metric(
-               summary_sw_per_length(record.result, metrics.coverage_target))
-        << '\t' << format_summary_metric(summary_sw_per_aligned(record.result));
-  }
-  out << '\t'
-      << record.result.path.aligned_pairs << '\t'
-      << format_summary_metric(metrics.coverage_query) << '\t'
-      << format_summary_metric(metrics.coverage_target) << '\t'
-      << format_summary_metric(metrics.coverage_mean) << '\t'
-      << format_summary_metric(metrics.identity) << '\t'
-      << format_summary_metric(metrics.rmsd) << '\t'
-      << format_summary_metric(metrics.tm_score_query) << '\t'
-      << format_summary_metric(metrics.tm_score_target) << '\t'
-      << format_summary_metric(metrics.lddt) << '\t'
-      << format_summary_metric(metrics.lddt_byA) << '\t'
-      << format_summary_metric(metrics.lddt_byB) << '\t'
-      << format_summary_metric(metrics.lddt_aln) << '\t'
-      << format_summary_metric(metrics.coverage_byA) << '\t'
-      << format_summary_metric(metrics.coverage_byB) << '\t'
-      << format_summary_metric(metrics.ecs) << '\t';
-  write_summary_callback_column(out, cb.fasta_path, record.query_index,
-                                record.target_index, cb.user_data);
-  out << '\t';
-  write_summary_callback_column(out, cb.pdb_path, record.query_index,
-                                record.target_index, cb.user_data);
-  out << '\n';
+                          const FormattedSummaryRecord& row,
+                          bool include_dual_score_schema) {
+  out << record.query_index << '\t' << record.target_index << '\t'
+      << row.pair_id << '\t' << row.raw_score;
+  if (include_dual_score_schema)
+    for (const auto& field : row.soft) out << '\t' << field;
+  out << '\t' << record.result.path.aligned_pairs;
+  for (const auto& field : row.metrics) out << '\t' << field;
+  out << '\t' << row.fasta_path << '\t' << row.pdb_path << '\n';
 }
 
 }  // namespace
@@ -3113,14 +3135,16 @@ TsvStreamingAllVsAllSink::TsvStreamingAllVsAllSink(std::ostream& output,
 
 universal::Status TsvStreamingAllVsAllSink::receive(
     const PairwiseResultRecord& record) {
-  for (std::ostream* out : outputs_) {
-    if (out == nullptr) {
-      continue;
-    }
-    write_summary_record(*out, record, callbacks_);
-    if (!out->good()) {
-      return {universal::StatusCode::Unavailable,
-              "all-vs-all summary write failed"};
+  if (std::any_of(outputs_.begin(), outputs_.end(),
+                  [](const auto* out) { return out != nullptr; })) {
+    const auto row = format_summary_record(record, callbacks_);
+    for (std::ostream* out : outputs_) {
+      if (out == nullptr) continue;
+      write_summary_record(*out, record, row, callbacks_.include_dual_score_schema);
+      if (!out->good()) {
+        return {universal::StatusCode::Unavailable,
+                "all-vs-all summary write failed"};
+      }
     }
   }
   ++emitted_;

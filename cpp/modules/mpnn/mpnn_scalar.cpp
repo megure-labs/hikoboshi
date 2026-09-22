@@ -694,7 +694,12 @@ void apply_mpnn_layers(const Mpnn64ForwardRequest& request) noexcept {
     mpnn_inline::mpnn_ffn_layer_scalar_inline(ffn, ffn_output);
     mpnn_inline::apply_residue_mask_gate_inline(request);
 
-    mpnn_inline::apply_edge_update_inline(request, layer);
+    // Only the next node layer consumes updated edges. Embedding output and
+    // debug capture expose node state; the diagnostic dump path above retains
+    // every edge update so its intermediate tensor contract is unchanged.
+    if (layer_index + 1 < request.descriptor.layer_count) {
+      mpnn_inline::apply_edge_update_inline(request, layer);
+    }
     capture_message_layer_output(request, layer_index);
   }
 }

@@ -1,5 +1,7 @@
 hikoboshi_io_sources = files(
+  'structure_embedding_cache.cpp',
   'structure_loader.cpp',
+  'structure_batch_loader.cpp',
   'pdb_parser.cpp',
   'mmcif_parser.cpp',
   'structure_normalize.cpp',

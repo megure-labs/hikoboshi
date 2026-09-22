@@ -4,6 +4,7 @@ hikoboshi_cli_sources = files(
   'exit_codes.cpp',
   'render.cpp',
   'weights_resolution.cpp',
+  'embedding_cache.cpp',
   'commands/encode.cpp',
   'commands/pairwise.cpp',
   'commands/pair_list.cpp',

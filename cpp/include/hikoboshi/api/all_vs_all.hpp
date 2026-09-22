@@ -15,9 +15,10 @@
 
 namespace hikoboshi::api {
 
-/// Streaming receiver for symmetric all-vs-all pair records.
+/// Streaming receiver for all-vs-all and caller-supplied pair-list records.
 ///
-/// Records are emitted in stable lexicographic input-index order. Returning a
+/// All-vs-all emits stable lexicographic input-index order; pair-list emits
+/// caller pair order, including duplicates. Returning a
 /// non-ok status stops enumeration and propagates the status to the caller.
 class PairwiseResultSink {
  public:
@@ -35,9 +36,11 @@ class PairwiseResultSink {
 /// `record.query_index`/`record.target_index` so the caller never needs to
 /// pre-materialize an `AllVsAllResult` to populate the row.
 ///
-/// The sink owns no per-pair allocations: the only growable storage is the
-/// std::ostream object the caller provides. End-to-end memory is bounded by
-/// the algorithms-layer streaming sink ring (p44) plus per-worker scratch.
+/// Metric values and callbacks are formatted once per record and reused across
+/// destinations. Only one formatted record is retained while publishing; output
+/// integer columns retain each stream's formatting. End-to-end memory is bounded
+/// by the algorithms-layer streaming ring plus per-worker scratch and any storage
+/// retained by the caller's streams.
 class TsvStreamingAllVsAllSink final : public PairwiseResultSink {
  public:
   /// Optional callbacks that turn `(query_index, target_index)` into pair-id

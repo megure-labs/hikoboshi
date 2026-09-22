@@ -18,6 +18,7 @@
 #include <hikoboshi/universal/status.hpp>
 #include <hikoboshi/universal/structure.hpp>
 #include <hikoboshi/universal/weights.hpp>
+#include <hikoboshi/universal/structure_embedding_cache.hpp>
 
 namespace hikoboshi::algorithms {
 
@@ -47,6 +48,7 @@ struct AllVsAllStructureRequest {
   hikoboshi::modules::Mpnn64Descriptor descriptor{};
   const hikoboshi::modules::detail::Mpnn64Weights* weights = nullptr;
   AllVsAllOptions options{};
+  hikoboshi::universal::StructureEmbeddingCache* embedding_cache = nullptr;
 };
 
 /// One sequence entry inside an `AllVsAllSequenceRequest`. The optional
@@ -96,6 +98,7 @@ struct PairListStructureRequest {
   std::size_t max_query_length = 0;
   std::size_t max_target_length = 0;
   AllVsAllOptions options{};
+  hikoboshi::universal::StructureEmbeddingCache* embedding_cache = nullptr;
 };
 
 struct PairListSequenceRequest {

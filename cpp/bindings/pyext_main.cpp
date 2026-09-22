@@ -44,7 +44,7 @@ PyModuleDef kModuleDef = {
   static int pybind11_init_##name(PyObject* variable)
 
 PYBIND11_MODULE(_core, m) {
-  if (PyModule_AddStringConstant(m, "__version__", "0.1.0") < 0) {
+  if (PyModule_AddStringConstant(m, "__version__", "0.1.1") < 0) {
     return -1;
   }
   if (hikoboshi::bindings::bind_exceptions(m) < 0 ||

@@ -4,6 +4,10 @@
 #include <hikoboshi/universal/structure.hpp>
 
 #include <cmath>
+#include <algorithm>
+#include <chrono>
+#include <filesystem>
+#include <fstream>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -531,9 +535,91 @@ void test_embedding_rejects_big_endian_float32() {
     fail("big-endian float32 npy must be rejected");
 }
 
+void require_loaded_equal(const pio::LoadedStructure& a, const pio::LoadedStructure& b) {
+  const auto x = a.view(), y = b.view();
+  if (x.residue_count != y.residue_count || x.input_id != y.input_id ||
+      x.source_filename != y.source_filename || x.coordinates.size != y.coordinates.size ||
+      x.atom_sources.size != y.atom_sources.size || x.residues.size != y.residues.size ||
+      x.chain_breaks.size != y.chain_breaks.size ||
+      a.selected_model_id() != b.selected_model_id() ||
+      a.selected_model_index() != b.selected_model_index() ||
+      a.selected_chain_id() != b.selected_chain_id() || a.altloc_note() != b.altloc_note())
+    fail("batch structure identity/selection metadata changed");
+  if (std::memcmp(x.coordinates.data, y.coordinates.data, x.coordinates.size * sizeof(float)) ||
+      !std::equal(x.atom_sources.data, x.atom_sources.data + x.atom_sources.size, y.atom_sources.data) ||
+      !std::equal(x.residue_codes.data, x.residue_codes.data + x.residue_codes.size, y.residue_codes.data))
+    fail("batch structure coordinates or atom/residue codes changed");
+  for (std::size_t i = 0; i < x.chain_breaks.size; ++i)
+    if (x.chain_breaks.data[i].after_residue_index != y.chain_breaks.data[i].after_residue_index)
+      fail("batch chain breaks changed");
+  for (std::size_t i = 0; i < x.residues.size; ++i) {
+    const auto& r = x.residues.data[i]; const auto& t = y.residues.data[i];
+    if (r.residue_code != t.residue_code || r.original_residue_name != t.original_residue_name ||
+        r.chain_id != t.chain_id || r.model_id != t.model_id || r.model_index != t.model_index ||
+        r.residue_number != t.residue_number || r.insertion_code != t.insertion_code ||
+        r.source_id != t.source_id || r.source_residue_index != t.source_residue_index ||
+        r.source_filename != t.source_filename || r.source_record_index != t.source_record_index)
+      fail("batch borrowed residue metadata changed after ownership transfer");
+  }
+}
+
+void test_ordered_parallel_file_loading() {
+  namespace fs = std::filesystem;
+  const auto unique = std::chrono::steady_clock::now().time_since_epoch().count();
+  const fs::path dir = fs::temp_directory_path() / ("hikoboshi-batch-load-" + std::to_string(unique));
+  if (!fs::create_directory(dir)) fail("batch fixture directory");
+  struct Cleanup { fs::path path; ~Cleanup() { std::error_code ec; fs::remove_all(path, ec); } } cleanup{dir};
+  std::vector<std::string> paths;
+  for (std::size_t i = 0; i < 32; ++i) {
+    const auto path = dir / (std::to_string(i) + (i % 4 == 1 ? ".cif" : ".pdb"));
+    std::ofstream file(path);
+    file << (i % 4 == 1 ? kCifBasic : i % 4 == 2 ? kPdbResidueGap : i % 4 == 3 ? kPdbMultiModel : kPdbBasic);
+    if (!file) fail("write batch fixture");
+    paths.push_back(path.string());
+  }
+  // Intentional non-lexical ordering and a duplicate are API-visible.
+  std::reverse(paths.begin(), paths.end());
+  paths.push_back(paths[2]);
+  for (bool inference : {false, true}) {
+    pio::StructureLoadOptions options;
+    options.infer_missing_atoms = inference;
+    options.chain_id = "A";
+    std::vector<pio::LoadedStructure> serial, parallel;
+    if (!pio::load_structures_from_files({paths.data(), paths.size()}, serial, 1, options).ok())
+      fail("serial batch load");
+    for (std::size_t threads : {0U, 2U, 4U, 4096U}) {
+      if (!pio::load_structures_from_files({paths.data(), paths.size()}, parallel, threads, options).ok() ||
+          parallel.size() != serial.size()) fail("parallel batch load");
+      for (std::size_t i = 0; i < serial.size(); ++i) require_loaded_equal(serial[i], parallel[i]);
+    }
+    auto bad_paths = paths;
+    const auto bad = dir / "bad.pdb";
+    { std::ofstream file(bad); file << kPdbBadCoord; }
+    bad_paths[5] = bad.string();
+    bad_paths[26] = (dir / "missing.pdb").string();
+    for (int ordering = 0; ordering < 2; ++ordering) {
+      const auto expected = pio::load_structure_from_file(bad_paths[5], options).status;
+      for (int repeat = 0; repeat < 4; ++repeat) {
+        const auto status = pio::load_structures_from_files({bad_paths.data(), bad_paths.size()}, parallel, 8, options);
+        if (status.code != expected.code || std::strcmp(status.detail, expected.detail) || parallel.size() != serial.size())
+          fail("batch must preserve earliest error and prior output");
+        require_loaded_equal(serial[0], parallel[0]);
+      }
+      std::swap(bad_paths[5], bad_paths[26]);
+    }
+    if (!pio::load_structures_from_files({paths.data(), paths.size()}, parallel, 4, options).ok())
+      fail("batch loader must recover after failure");
+    if (pio::load_structures_from_files({nullptr, 1}, parallel, 4).code != pu::StatusCode::InvalidArgument)
+      fail("batch loader must reject invalid span");
+    if (!pio::load_structures_from_files({nullptr, 0}, parallel, 4).ok() || !parallel.empty())
+      fail("empty batch must replace output with an empty result");
+  }
+}
+
 }  // namespace
 
 int main() {
+  test_ordered_parallel_file_loading();
   test_residue_classification();
   test_format_detection();
   test_pdb_basic();

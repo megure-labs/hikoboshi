@@ -7,7 +7,6 @@ namespace hikoboshi::algorithms {
 namespace {
 
 using hikoboshi::universal::MetricInvalidReason;
-using hikoboshi::universal::MetricValue;
 using hikoboshi::universal::StructureView;
 
 double distance(Point3 a, Point3 b) noexcept {
@@ -23,27 +22,43 @@ double d0(std::size_t length) noexcept {
   return value > 0.5 ? value : 0.5;
 }
 
-MetricValue tm_for_length(const hikoboshi::universal::AlignmentPath& path,
-                          const StructureView& query,
-                          const StructureView& target,
-                          const KabschTransform& transform,
-                          std::size_t norm_length) noexcept {
-  if (norm_length == 0) {
-    return invalid_metric(MetricInvalidReason::ZeroDenominator);
+TmScoreMetrics tm_from_superposition(
+    const hikoboshi::universal::AlignmentPath& path,
+    const StructureView& query,
+    const StructureView& target,
+    const KabschResult& kabsch,
+    std::size_t query_length,
+    std::size_t target_length) noexcept {
+  if (!kabsch.valid) {
+    const auto invalid = invalid_metric(kabsch.reason);
+    return {invalid, invalid};
   }
-  const double scale = d0(norm_length);
-  double sum = 0.0;
+  const double query_scale = d0(query_length);
+  const double target_scale = d0(target_length);
+  double query_sum = 0.0;
+  double target_sum = 0.0;
   AlignedCaPair pair{};
   for (const auto& step : path.steps) {
     if (!load_aligned_observed_ca_pair(step, query, target, pair)) {
       continue;
     }
-    const Point3 transformed = apply_transform(transform, pair.target);
+    const Point3 transformed = apply_transform(kabsch.transform, pair.target);
     const double d = distance(pair.query, transformed);
-    const double ratio = d / scale;
-    sum += 1.0 / (1.0 + ratio * ratio);
+    if (query_length != 0) {
+      const double ratio = d / query_scale;
+      query_sum += 1.0 / (1.0 + ratio * ratio);
+    }
+    if (target_length != 0) {
+      const double ratio = d / target_scale;
+      target_sum += 1.0 / (1.0 + ratio * ratio);
+    }
   }
-  return valid_metric(sum / static_cast<double>(norm_length));
+  // Each sum retains its original per-step arithmetic and accumulation order.
+  return {
+      query_length == 0 ? invalid_metric(MetricInvalidReason::ZeroDenominator)
+                        : valid_metric(query_sum / static_cast<double>(query_length)),
+      target_length == 0 ? invalid_metric(MetricInvalidReason::ZeroDenominator)
+                         : valid_metric(target_sum / static_cast<double>(target_length))};
 }
 
 }  // namespace
@@ -54,27 +69,21 @@ TmScoreMetrics compute_tm_scores(
     const StructureView& target,
     std::size_t query_length,
     std::size_t target_length) noexcept {
-  TmScoreMetrics result{
-      invalid_metric(MetricInvalidReason::MissingStructureMetadata),
-      invalid_metric(MetricInvalidReason::MissingStructureMetadata),
-  };
-  if (!has_complete_structure_coordinates(query) ||
-      !has_complete_structure_coordinates(target)) {
-    return result;
-  }
-
   const KabschResult kabsch = kabsch_superpose_aligned_ca(path, query, target);
-  if (!kabsch.valid) {
-    result.query_norm = invalid_metric(kabsch.reason);
-    result.target_norm = invalid_metric(kabsch.reason);
-    return result;
-  }
+  return tm_from_superposition(path, query, target, kabsch,
+                               query_length, target_length);
+}
 
-  result.query_norm =
-      tm_for_length(path, query, target, kabsch.transform, query_length);
-  result.target_norm =
-      tm_for_length(path, query, target, kabsch.transform, target_length);
-  return result;
+SuperpositionMetrics compute_superposition_metrics(
+    const hikoboshi::universal::AlignmentPath& path,
+    const StructureView& query,
+    const StructureView& target,
+    std::size_t query_length,
+    std::size_t target_length) noexcept {
+  const KabschResult kabsch = kabsch_superpose_aligned_ca(path, query, target);
+  return {kabsch.valid ? valid_metric(kabsch.rmsd) : invalid_metric(kabsch.reason),
+          tm_from_superposition(path, query, target, kabsch,
+                               query_length, target_length)};
 }
 
 }  // namespace hikoboshi::algorithms

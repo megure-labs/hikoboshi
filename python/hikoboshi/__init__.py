@@ -1,4 +1,4 @@
-"""Python adapter for the Hikoboshi 0.1.0 public API."""
+"""Python adapter for the Hikoboshi 0.1.1 public API."""
 
 from typing import Any
 
@@ -35,7 +35,7 @@ from .results import (
 )
 from .score_alignment import ScoreAlignmentResult, score_alignment
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 ALIGNMENT_GAP_SENTINEL = -1
 

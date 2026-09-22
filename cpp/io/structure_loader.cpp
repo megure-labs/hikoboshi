@@ -142,15 +142,15 @@ std::string read_file_contents(std::string_view path,
   return buffer.str();
 }
 
-std::string filename_from_path(std::string_view path) {
+}  // namespace
+
+std::string structure_input_id_from_path(std::string_view path) {
   const std::size_t slash = path.find_last_of("/\\");
   if (slash == std::string_view::npos) {
     return std::string{path};
   }
   return std::string{path.substr(slash + 1)};
 }
-
-}  // namespace
 
 StructureFormat detect_structure_format(std::string_view path,
                                         std::string_view content) noexcept {
@@ -192,7 +192,7 @@ universal::Result<LoadedStructure> load_structure_from_file(
     return result;
   }
 
-  const std::string filename = filename_from_path(path);
+  const std::string filename = structure_input_id_from_path(path);
   if (format == StructureFormat::Pdb) {
     return load_pdb_from_string(content, filename, options);
   }

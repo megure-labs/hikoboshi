@@ -132,9 +132,25 @@ def main() -> int:
             raise SystemExit("soft pair-list row count mismatch")
         require_soft_schema(soft_rows, "soft pair-list")
 
+        # Cross multiple bounded batches and retain duplicate artifact names.
+        many_pairs = root / "many.tsv"
+        many_pairs.write_text("alpha\tbeta\ngamma\talpha\nalpha\tbeta\n" * 685, encoding="ascii")
+        artifacts = root / "artifacts"
+        serial_many = run_pair_list(binary, many_pairs, fasta, root / "many-serial.tsv",
+                                    "--threads", "1", "--output-dir", str(artifacts))
+        before = {p.name: p.read_bytes() for p in artifacts.rglob("*.fasta")}
+        parallel_many = run_pair_list(binary, many_pairs, fasta, root / "many-parallel.tsv",
+                                      "--threads", "4", "--output-dir", str(artifacts))
+        after = {p.name: p.read_bytes() for p in artifacts.rglob("*.fasta")}
+        if serial_many.returncode or parallel_many.returncode or serial_many.stdout != parallel_many.stdout:
+            raise SystemExit("batched pair-list changed ordered serial/threaded output")
+        if not before or before != after or len(parse_summary(parallel_many.stdout)) != 2055:
+            raise SystemExit("batched pair-list artifacts/count changed")
+
         missing_pairs = root / "missing.tsv"
         missing_pairs.write_text("alpha\tabsent_id\n", encoding="ascii")
         missing_summary = root / "missing.tsv.out"
+        missing_summary.write_text("preserve existing output", encoding="ascii")
         missing = run_pair_list(
             binary,
             missing_pairs,
@@ -143,6 +159,8 @@ def main() -> int:
         )
         if missing.returncode == 0:
             raise SystemExit("pair-list missing-ID case must fail")
+        if missing.stdout or missing_summary.read_text() != "preserve existing output":
+            raise SystemExit("failed pair-list must not publish or overwrite its summary")
         if "absent_id" not in missing.stderr:
             raise SystemExit(
                 "pair-list missing-ID diagnostic must name the absent ID\n"

@@ -1,6 +1,25 @@
 # Performance Methodology
 
-Hikoboshi `0.1.0` is validated as a scalar CPU release. The release evidence
+## Scalar improvements in 0.1.1
+
+The shared structure-encoding paths use the existing fast scalar GEMM kernels,
+skip the unused terminal embedding edge update, reuse encoder scratch storage,
+and balance parallel encoding work by estimated residue cost. Structure loading
+is parallel and pair-list input loads only referenced structures. Pair-list result
+staging is bounded, repeated geometry preparation is reduced, and summary output
+reuses formatted rows.
+
+Portable CPU targeting remains the default. Optional [native CPU targeting](../source-build.md#cpu-targeting)
+and [embedding caches](embedding-cache.md) address separate build and repeat-job
+workloads. [Phase profiling](phase-profiling.md) prepares an isolated diagnostic
+build; normal builds contain no added timers. Speedups depend on input length,
+protein reuse, output volume, compiler and CPU. Small GEMM rounding differences
+may occur relative to older fast-mode results; do not assume bitwise parity
+across versions. No new AWS throughput or NUMA scaling result is claimed.
+
+## Historical 0.1.0 validation
+
+Hikoboshi `0.1.0` was validated as a scalar CPU release. The release evidence
 compares current wall-clock timings with a rebuilt scalar archive binary and
 keeps numerical correctness tied to the hard local affine Smith-Waterman
 behavior in this release.
@@ -26,7 +45,7 @@ Hikoboshi matched the rebuilt archive binary wall-clock time for that operation
 on the validation host. Ratios above `1.0x` are slower than archive; ratios
 below `1.0x` are faster.
 
-The most recent release evidence was captured on a 12-logical-CPU Intel Xeon
+The historical 0.1.0 release evidence was captured on a 12-logical-CPU Intel Xeon
 Gold 6338 Linux host with GCC 13.3 and Meson 1.3.2. Native compiles were capped
 at 8 jobs during validation.
 

@@ -1,3 +1,5 @@
+#include "../embedding_cache.hpp"
+#include "../summary_spool.hpp"
 #include <hikoboshi/api/all_vs_all.hpp>
 #include <hikoboshi/api/engine.hpp>
 #include <hikoboshi/io/all_vs_all_layout.hpp>
@@ -264,6 +266,7 @@ void print_all_vs_all_usage(std::ostream& out) {
          ".cif, or .mmcif files.\n"
       << "\n"
       << "options:\n"
+      << "  --embedding-cache DIR  reuse structure encodings across jobs\n"
       << "  --summary PATH      write TSV summary\n"
       << "  --output-dir DIR    write per-pair alignments/ and pdb/ artifacts\n"
       << "  --include-self      enumerate i <= j instead of i < j\n"
@@ -274,7 +277,8 @@ void print_all_vs_all_usage(std::ostream& out) {
       << "  --temperature VAL   soft Smith-Waterman temperature (default: 1.0; ignored with --mode hard)\n"
       << "  --package NAME      compiled package ID or alias\n"
       << "  --backend auto|scalar\n"
-      << "  --threads N         all-vs-all worker threads: 0 auto, 1 serial\n"
+      << "  --threads N         worker threads: 0 auto, 1 serial\n"
+      << "                      structure loading uses at most 32 workers\n"
       << "\n"
       << "Scaling: parallelism is across pairs. Speedup is best when pair "
          "count >> thread count. Output is bit-identical regardless of "
@@ -285,6 +289,7 @@ struct AllVsAllOptions {
   std::string mode;
   std::vector<std::string> inputs;
   std::string summary_path;
+  std::string embedding_cache_dir;
   std::string output_dir;
   hikoboshi::api::AllVsAllOptions request_options{};
   // Mirrors `PairwiseOptions::alignment_gap_*_set`: tracks whether the user
@@ -363,6 +368,16 @@ hikoboshi::universal::Status parse_all_vs_all_options(
     // older `--soft` / `--soft-sw` aliases.
     {
       std::string value;
+      if (parse_option_assignment(arg, "--embedding-cache", value) ||
+          is_option(arg, "--embedding-cache")) {
+        if (value.empty()) {
+          const auto status = option_value(index, argc, argv, value);
+          if (!status_ok(status)) return status;
+        }
+        if (value.empty()) return invalid_arguments("--embedding-cache requires a nonempty directory");
+        options.embedding_cache_dir = value;
+        continue;
+      }
       if (parse_option_assignment(arg, "--mode", value) ||
           is_option(arg, "--mode")) {
         if (value.empty()) {
@@ -601,6 +616,7 @@ std::size_t cli_pair_count(std::size_t input_count,
 }
 
 hikoboshi::universal::Status expand_structure_inputs(AllVsAllOptions& options) {
+
   if (!is_structure_input_mode(options.mode)) {
     return ok();
   }
@@ -687,28 +703,6 @@ void fill_summary_paths(const hikoboshi::api::AllVsAllResult& result,
       pair_ids.push_back({});
     }
   }
-}
-
-hikoboshi::universal::Status write_summary_file(
-    std::string_view path,
-    const hikoboshi::api::AllVsAllResult& result,
-    const std::vector<std::string>& pair_ids,
-    const std::vector<std::string>& fasta_paths,
-    const std::vector<std::string>& pdb_paths,
-    bool include_dual_score_schema) {
-  if (path.empty()) {
-    return ok();
-  }
-  std::ofstream out{std::string{path}, std::ios::binary};
-  if (!out) {
-    return unavailable("all-vs-all summary path is not writable");
-  }
-  render_all_vs_all_summary(out, result, pair_ids, fasta_paths, pdb_paths,
-                            include_dual_score_schema);
-  if (!out) {
-    return unavailable("all-vs-all summary write failed");
-  }
-  return ok();
 }
 
 hikoboshi::universal::Status create_output_dirs(std::string_view output_dir) {
@@ -807,14 +801,56 @@ int finish_all_vs_all(std::string_view summary_path,
                       const std::vector<std::string>& fasta_paths,
                       const std::vector<std::string>& pdb_paths,
                       bool include_dual_score_schema) {
-  render_all_vs_all_summary(std::cout, result, pair_ids, fasta_paths,
-                            pdb_paths, include_dual_score_schema);
-  const hikoboshi::universal::Status status = write_summary_file(
-      summary_path, result, pair_ids, fasta_paths, pdb_paths,
-      include_dual_score_schema);
-  if (!status_ok(status)) {
-    return report_status(status);
+  if (summary_path.empty()) {
+    render_all_vs_all_summary(std::cout, result, pair_ids, fasta_paths,
+                              pdb_paths, include_dual_score_schema);
+    return 0;
   }
+  // The artifact route already owns collected records. Format each once into
+  // a bounded spool, then retain stdout-before-summary-open behavior.
+  SummarySpool spool{{"all-vs-all temporary summary write failed",
+                       "all-vs-all temporary summary rewind failed",
+                       "all-vs-all summary write failed"}};
+  if (!spool.valid())
+    return report_status(unavailable("all-vs-all temporary summary could not be created"));
+  struct Context {
+    const std::vector<std::string>& ids;
+    const std::vector<std::string>& fasta;
+    const std::vector<std::string>& pdb;
+    std::size_t index = 0;
+  } context{pair_ids, fasta_paths, pdb_paths};
+  hikoboshi::api::TsvStreamingAllVsAllSink::Callbacks cb{};
+  cb.user_data = &context;
+  cb.include_dual_score_schema = include_dual_score_schema;
+  cb.pair_id = [](std::size_t, std::size_t, void* data) {
+    const auto& c = *static_cast<Context*>(data);
+    return c.index < c.ids.size() ? c.ids[c.index] : std::string{};
+  };
+  cb.fasta_path = [](std::size_t, std::size_t, void* data) {
+    const auto& c = *static_cast<Context*>(data);
+    return c.index < c.fasta.size() ? c.fasta[c.index] : std::string{};
+  };
+  cb.pdb_path = [](std::size_t, std::size_t, void* data) {
+    const auto& c = *static_cast<Context*>(data);
+    return c.index < c.pdb.size() ? c.pdb[c.index] : std::string{};
+  };
+  std::ostringstream rows;
+  hikoboshi::api::TsvStreamingAllVsAllSink sink(rows, cb);
+  for (const auto& record : result.records) {
+    auto status = sink.receive(record);
+    if (status_ok(status)) status = spool.append(rows);
+    if (!status_ok(status)) return report_status(status);
+    ++context.index;
+  }
+  auto status = spool.append(rows);  // Header on empty input.
+  if (status_ok(status)) status = spool.publish(std::cout);
+  if (!status_ok(status)) return report_status(status);
+  std::ofstream out{std::string{summary_path}, std::ios::binary};
+  if (!out) return report_status(unavailable("all-vs-all summary path is not writable"));
+  status = spool.publish(out);
+  if (!status_ok(status)) return report_status(status);
+  out.flush();
+  if (!out) return report_status(unavailable("all-vs-all summary write failed"));
   return 0;
 }
 
@@ -1181,20 +1217,15 @@ int run_structure_all_vs_all(const AllVsAllOptions& options) {
   std::vector<hikoboshi::io::LoadedStructure> loaded;
   std::vector<hikoboshi::universal::StructureView> views;
   std::vector<hikoboshi::io::ArtifactInputId> artifact_ids;
-  loaded.reserve(options.inputs.size());
-  views.reserve(options.inputs.size());
-  artifact_ids.reserve(options.inputs.size());
-
-  for (std::size_t index = 0; index < options.inputs.size(); ++index) {
-    hikoboshi::universal::Result<hikoboshi::io::LoadedStructure> structure =
-        hikoboshi::io::load_structure_from_file(options.inputs[index]);
-    if (!status_ok(structure.status)) {
-      return report_status(structure.status);
-    }
-    loaded.push_back(std::move(structure.value));
-    views.push_back(loaded.back().view());
+  const auto load_status = hikoboshi::io::load_structures_from_files(
+      {options.inputs.data(), options.inputs.size()}, loaded, options.thread_count);
+  if (!status_ok(load_status)) return report_status(load_status);
+  views.reserve(loaded.size());
+  artifact_ids.reserve(loaded.size());
+  for (std::size_t index = 0; index < loaded.size(); ++index) {
+    views.push_back(loaded[index].view());
     artifact_ids.push_back(
-        structure_artifact_id(index, options.inputs[index], loaded.back()));
+        structure_artifact_id(index, options.inputs[index], loaded[index]));
   }
 
   hikoboshi::universal::Result<hikoboshi::universal::PackageHandle> package{};
@@ -1207,20 +1238,19 @@ int run_structure_all_vs_all(const AllVsAllOptions& options) {
     return report_status(package.status);
   }
 
-  const hikoboshi::universal::Result<hikoboshi::api::Engine> engine =
-      make_engine_with_package(package.value, options.backend,
-                               options.thread_count);
+  hikoboshi::io::DiskStructureEmbeddingCache cache;
+  const auto engine = make_cached_structure_engine(package.value, options.backend,
+      options.thread_count, options.embedding_cache_dir, cache);
   if (!status_ok(engine.status)) {
     return report_status(engine.status);
   }
 
-  if (options.output_dir.empty()) {
-    return run_structure_all_vs_all_streaming(options, engine.value, views,
-                                              artifact_ids);
-  }
-  return run_structure_all_vs_all_collected(
-      options, engine.value, package.value.descriptor, loaded, views,
-      artifact_ids);
+  const int result = options.output_dir.empty()
+      ? run_structure_all_vs_all_streaming(options, engine.value, views, artifact_ids)
+      : run_structure_all_vs_all_collected(options, engine.value,
+          package.value.descriptor, loaded, views, artifact_ids);
+  if (!options.embedding_cache_dir.empty()) report_embedding_cache_statistics(cache);
+  return result;
 }
 
 }  // namespace
@@ -1239,6 +1269,12 @@ int run_all_vs_all(int argc, char** argv) {
     return report_status(status);
   }
 
+  if (!options.embedding_cache_dir.empty() &&
+      (!is_structure_input_mode(options.mode) ||
+       (options.package_selected && is_sequence_input_package(options.package)))) {
+    return report_status(invalid_arguments(
+        "--embedding-cache currently requires structure or coords input"));
+  }
   if (options.mode == "embeddings") {
     render_thread_count_diagnostic(std::cerr, options);
     return run_embedding_all_vs_all(options);

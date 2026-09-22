@@ -1,7 +1,7 @@
 project(
   'hikoboshi',
   'cpp',
-  version: '0.1.0',
+  version: '0.1.1',
   meson_version: '>=1.1.0',
   default_options: [
     'cpp_std=c++17',
@@ -11,6 +11,36 @@ project(
 
 cxx = meson.get_compiler('cpp')
 summary('C++ compiler', cxx.get_id() + ' ' + cxx.version(), section: 'Hikoboshi toolchain')
+
+# Portable remains the default for distributable binaries. Native is opt-in and
+# changes compiler targeting only; it does not select a separate SIMD backend.
+hikoboshi_cpu_target = get_option('hikoboshi_cpu_target')
+hikoboshi_cpu_target_args = []
+if hikoboshi_cpu_target == 'native'
+  if meson.is_cross_build()
+    error('hikoboshi_cpu_target=native is not supported for cross builds; use portable and explicit toolchain flags for the deployment CPU.')
+  endif
+  if not ['gcc', 'clang', 'apple-clang'].contains(cxx.get_id())
+    error('hikoboshi_cpu_target=native requires GCC or Clang; use portable for this compiler.')
+  endif
+  if ['x86', 'x86_64'].contains(host_machine.cpu_family())
+    hikoboshi_cpu_target_args = ['-march=native']
+  elif ['arm', 'aarch64'].contains(host_machine.cpu_family())
+    hikoboshi_cpu_target_args = ['-mcpu=native']
+  else
+    error('hikoboshi_cpu_target=native is supported on x86 and ARM; use portable for this CPU family.')
+  endif
+  # Preserve separate multiply/add rounding when native enables hardware FMA.
+  hikoboshi_cpu_target_args += ['-ffp-contract=off']
+  foreach flag : hikoboshi_cpu_target_args
+    if not cxx.has_argument(flag)
+      error('Compiler does not support native targeting flag ' + flag + '; use hikoboshi_cpu_target=portable.')
+    endif
+  endforeach
+  add_project_arguments(hikoboshi_cpu_target_args, language: 'cpp')
+endif
+summary('CPU target', hikoboshi_cpu_target, section: 'Hikoboshi toolchain')
+summary('CPU target flags', hikoboshi_cpu_target_args, section: 'Hikoboshi toolchain')
 
 hikoboshi_build_sanitize = get_option('b_sanitize')
 hikoboshi_build_werror = get_option('werror')
@@ -206,7 +236,7 @@ if hikoboshi_reserved_backend_requests.length() > 0
   endforeach
 
   error(
-    'Reserved Hikoboshi backend options are not buildable in 0.1.0 scalar-only builds: '
+    'Reserved Hikoboshi backend options are not buildable in 0.1.1 scalar-only builds: '
     + hikoboshi_reserved_backend_diagnostic
     + '. Set GPU backends to disabled and hikoboshi_backend_simd=none.',
   )
@@ -239,6 +269,7 @@ hikoboshi_universal_headers = files(
   'cpp/include/hikoboshi/universal/span.hpp',
   'cpp/include/hikoboshi/universal/status.hpp',
   'cpp/include/hikoboshi/universal/structure.hpp',
+  'cpp/include/hikoboshi/universal/structure_embedding_cache.hpp',
   'cpp/include/hikoboshi/universal/tensor.hpp',
   'cpp/include/hikoboshi/universal/tensor_role.hpp',
   'cpp/include/hikoboshi/universal/types.hpp',
@@ -766,6 +797,11 @@ hikoboshi_pair_list_vs_pairwise_parity = executable(
   'tests/integration/pair_list_vs_pairwise_parity.cpp',
   dependencies: [hikoboshi_api_dep, hikoboshi_weights_dep, hikoboshi_universal_dep],
 )
+hikoboshi_structure_embedding_cache_tests = executable(
+  'hikoboshi_structure_embedding_cache_tests',
+  'tests/cpp/structure_embedding_cache_tests.cpp',
+  dependencies: [hikoboshi_io_dep, hikoboshi_universal_dep],
+)
 hikoboshi_pair_list_cache_hit = executable(
   'hikoboshi_pair_list_cache_hit',
   'tests/integration/pair_list_cache_hit.cpp',
@@ -883,7 +919,7 @@ hikoboshi_all_vs_all_parallel_correctness_tests = executable(
 hikoboshi_all_vs_all_parallel_encoding_tests = executable(
   'hikoboshi_all_vs_all_parallel_encoding_tests',
   'tests/cpp/all_vs_all_parallel_encoding_tests.cpp',
-  dependencies: [hikoboshi_api_dep, hikoboshi_algorithms_dep, hikoboshi_weights_dep, hikoboshi_universal_dep],
+  dependencies: [hikoboshi_io_dep, hikoboshi_api_dep, hikoboshi_algorithms_dep, hikoboshi_weights_dep, hikoboshi_universal_dep],
   link_args: hikoboshi_tsan_executable_link_args + hikoboshi_mpnn_forward_wrap_link_args,
   build_by_default: hikoboshi_gnu_ld_wrap_supported,
 )
@@ -981,6 +1017,7 @@ foreach case : hikoboshi_plain_tests
 endforeach
 
 hikoboshi_suite_tests = [
+  ['hikoboshi-structure-embedding-cache-tests', hikoboshi_structure_embedding_cache_tests, ['io', 'cache']],
   ['hikoboshi-proteinmpnn-v48-020-contract-test', hikoboshi_proteinmpnn_v48_020_contract_test, ['universal', 'contract']],
   ['hikoboshi-proteinmpnn-decoder-layer-parity-test', hikoboshi_proteinmpnn_decoder_layer_parity_test, ['modules', 'parity']],
   ['hikoboshi-primitive-compute-goldens', hikoboshi_primitive_compute_goldens, 'primitives'],
@@ -1310,6 +1347,7 @@ if hikoboshi_python_api
     ['hikoboshi-cli-pairwise-smoke', 'tests/cli/run_cli_pairwise_smoke.py'],
     ['hikoboshi-cli-pairwise-sequence-smoke', 'tests/cli/run_cli_pairwise_sequence_smoke.py'],
     ['hikoboshi-cli-pair-list-smoke', 'tests/cli/run_cli_pair_list_smoke.py'],
+    ['hikoboshi-cli-embedding-cache', 'tests/cli/run_cli_embedding_cache.py'],
     ['hikoboshi-cli-all-vs-all-smoke', 'tests/cli/run_cli_all_vs_all_smoke.py'],
     ['hikoboshi-cli-score-alignment-smoke', 'tests/cli/test_score_alignment.sh'],
     ['hikoboshi-cli-invalid-metric-na', 'tests/cli/run_cli_invalid_metric_na.py'],
