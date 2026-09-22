@@ -13,5 +13,11 @@ result = subprocess.run(
     stderr=subprocess.PIPE,
 )
 
-if "hikoboshi 0.1.0 placeholder" not in result.stdout:
+if result.stdout != "Hikoboshi 0.1.1\n":
     raise SystemExit(f"unexpected CLI output: {result.stdout!r}")
+
+command_version = subprocess.run(
+    [binary, "version"], check=True, text=True, capture_output=True
+)
+if command_version.stdout != result.stdout:
+    raise SystemExit("--version and version disagree")

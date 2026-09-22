@@ -326,6 +326,28 @@ void test_mpnn_linear_dispatch(std::size_t m, std::size_t n, std::size_t k,
     mpnn::linear_row_nt_inline(input.data() + row * k, weights, n, k,
                                actual.data() + row * n);
   }
+  if (hiko_d::active_gemm_parity_mode() == hiko_d::GemmParityMode::Fast) {
+    // The single-row path uses the tail kernel; a batched request also uses
+    // the 4x4 kernel. Compiler contraction can round these differently.
+    // Require the public tolerance across shapes, but exact dispatch parity
+    // against a primitive request with the same single-row shape.
+    for (std::size_t i = 0; i < actual.size(); ++i) {
+      if (!std::isfinite(actual[i]) || !std::isfinite(expected[i]) ||
+          std::fabs(actual[i] - expected[i]) > kFastTolerance)
+        fail("MPNN row/batch fast tolerance");
+    }
+    for (std::size_t row = 0; row < m; ++row) {
+      hiko_l::GemmScalarRequest request{};
+      request.lhs = input.data() + row * k;
+      request.rhs = weight.data();
+      request.m = 1; request.n = n; request.k = k;
+      hiko_l::gemm_nt_scalar_fast(request, expected.data() + row * n);
+      if (with_bias) {
+        for (std::size_t col = 0; col < n; ++col)
+          expected[row * n + col] += bias[col];
+      }
+    }
+  }
   if (!bit_equal(expected, actual)) fail("MPNN single-row linear dispatch/bias");
 }
 
