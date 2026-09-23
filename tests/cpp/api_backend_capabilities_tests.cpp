@@ -18,7 +18,7 @@ void fail(const char* message) {
 
 constexpr bool version_is_0_1_0() noexcept {
   return hiko_u::kVersionMajor == 0 && hiko_u::kVersionMinor == 1 &&
-         hiko_u::kVersionPatch == 0 && hiko_u::kVersionLabel.empty();
+         hiko_u::kVersionPatch == 1 && hiko_u::kVersionLabel.empty();
 }
 
 void require_0_1_0_release_lock() {

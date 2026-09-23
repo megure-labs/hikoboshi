@@ -19,10 +19,10 @@ struct VersionView {
   std::string_view label;
 };
 
-/// Hikoboshi public API version constants for the 0.1.0 release line.
+/// Hikoboshi public API version constants for the 0.1 release line.
 inline constexpr int kVersionMajor = 0;
 inline constexpr int kVersionMinor = 1;
-inline constexpr int kVersionPatch = 0;
+inline constexpr int kVersionPatch = 1;
 inline constexpr std::string_view kVersionLabel{};
 inline constexpr VersionView kVersion{
     kVersionMajor,

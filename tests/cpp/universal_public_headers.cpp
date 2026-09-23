@@ -34,7 +34,7 @@ static_assert(std::is_trivially_copyable<hiko_u::ScoreSemantics>::value,
               "ScoreSemantics must stay trivially copyable");
 static_assert(hiko_u::kVersionMajor == 0, "version major is part of the public contract");
 static_assert(hiko_u::kVersionMinor == 1, "version minor is part of the public contract");
-static_assert(hiko_u::kVersionPatch == 0, "version patch is part of the public contract");
+static_assert(hiko_u::kVersionPatch == 1, "version patch is part of the public contract");
 static_assert(hiko_u::kAlignmentGapSentinel == -1,
               "hard-SW path uses -1 as the public gap sentinel");
 static_assert(hiko_u::kCanonicalAtomCount == 5, "structure views use N, CA, C, O, CB");

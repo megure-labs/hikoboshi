@@ -198,6 +198,23 @@ int main() {
     fail("pair-list must emit exactly one record per input pair");
   }
 
+  class CheckSink final : public hiko::PairwiseResultSink {
+   public:
+    const hiko::AllVsAllResult& expected;
+    std::size_t index = 0;
+    explicit CheckSink(const hiko::AllVsAllResult& value) : expected(value) {}
+    hiko_u::Status receive(const hiko::PairwiseResultRecord& record) override {
+      if (index >= expected.records.size()) fail("stream emitted extra sequence record");
+      const auto& want = expected.records[index];
+      if (record.query_index != want.query_index || record.target_index != want.target_index)
+        fail("stream changed sequence source indices");
+      compare_record(index++, record.result, want.result, 0.0);
+      return hiko_u::ok_status();
+    }
+  } streaming(pair_list.value);
+  if (!engine.pair_list(pair_list_request, streaming).ok() || streaming.index != pairs.size())
+    fail("sequence streaming must match collection");
+
   const double tol = active_score_tolerance();
   for (std::size_t k = 0; k < pairs.size(); ++k) {
     const std::size_t query = sample_index(pairs[k].first);

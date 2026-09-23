@@ -231,6 +231,89 @@ def main() -> int:
             )
         require_pairs(directory.stdout, [("0", "1"), ("0", "2"), ("1", "2")])
 
+        parallel_dir = root / "parallel_structures"
+        parallel_dir.mkdir()
+        parallel_inputs = [parallel_dir / f"input-{i}.pdb" for i in range(8)]
+        for path in parallel_inputs:
+            write_pdb(path)
+        explicit_order = list(reversed(parallel_inputs))
+        for mode in ("structure", "coords"):
+            serial = run_structure_all_vs_all(binary, mode, explicit_order, "--threads", "1")
+            parallel = run_structure_all_vs_all(binary, mode, explicit_order, "--threads", "4")
+            if serial.returncode or parallel.returncode or serial.stdout != parallel.stdout:
+                raise SystemExit("parallel file loading changed positional all-vs-all output")
+        pairs_path = root / "structure-pairs.tsv"
+        pairs_path.write_text("input-6.pdb\tinput-1.pdb\ninput-1.pdb\tinput-6.pdb\ninput-6.pdb\tinput-1.pdb\n", encoding="ascii")
+        def structure_pairs(threads: int, *extra: str) -> subprocess.CompletedProcess[str]:
+            return subprocess.run([binary, "pair-list", "--pairs", pairs_path,
+                                   parallel_dir, "--threads", str(threads), *extra],
+                                  text=True, capture_output=True, check=False)
+        serial = structure_pairs(1)
+        parallel = structure_pairs(4)
+        if serial.returncode or parallel.returncode or serial.stdout != parallel.stdout:
+            raise SystemExit("parallel directory loading changed duplicate/directed pair-list output")
+        for mode in ("hard", "soft", "both"):
+            pair_summary = root / f"pairs-{mode}.tsv"
+            ordinary = structure_pairs(4, "--mode", mode)
+            mirrored = structure_pairs(4, "--mode", mode, "--summary", str(pair_summary))
+            if ordinary.returncode or mirrored.returncode or ordinary.stdout != mirrored.stdout or pair_summary.read_text() != mirrored.stdout:
+                raise SystemExit("single-spool pair summary must retain stdout and both schemas")
+        bad_summary = structure_pairs(4, "--summary", str(root))
+        if not bad_summary.returncode or bad_summary.stdout != structure_pairs(4).stdout:
+            raise SystemExit("unwritable pair summary must retain stdout-before-open behavior")
+        if Path("/dev/full").exists():
+            full = structure_pairs(4, "--summary", "/dev/full")
+            if not full.returncode or "summary write failed" not in full.stderr:
+                raise SystemExit("small buffered summary write failure must propagate")
+        for mode in ("hard", "both"):
+            artifact_dir = root / f"summary-artifacts-{mode}"
+            artifact_summary = root / f"artifact-{mode}.tsv"
+            arguments = ("--mode", mode, "--output-dir", str(artifact_dir))
+            ordinary = run_structure_all_vs_all(binary, "structure", parallel_inputs[:2], *arguments)
+            mirrored = run_structure_all_vs_all(binary, "structure", parallel_inputs[:2], *arguments, "--summary", str(artifact_summary))
+            if ordinary.returncode or mirrored.returncode or ordinary.stdout != mirrored.stdout or artifact_summary.read_text() != mirrored.stdout:
+                raise SystemExit("collected artifact route must reuse identical summary bytes")
+            bad_summary = run_structure_all_vs_all(binary, "structure", parallel_inputs[:2], *arguments, "--summary", str(root))
+            if not bad_summary.returncode or bad_summary.stdout != ordinary.stdout:
+                raise SystemExit("unwritable artifact summary must retain stdout-before-open behavior")
+
+        # Unreferenced malformed inputs are ignored by pair-list, but their
+        # sorted positions still count toward original source indices.
+        (parallel_dir / "000-invalid.pdb").write_text("not a PDB\n", encoding="ascii")
+        (parallel_dir / "zzz-invalid.cif").write_text("invalid mmCIF\n", encoding="ascii")
+        serial = structure_pairs(1)
+        parallel = structure_pairs(4)
+        if serial.returncode or parallel.returncode or serial.stdout != parallel.stdout:
+            raise SystemExit("unreferenced malformed structures must not be parsed")
+        require_pairs(serial.stdout, [("7", "2"), ("2", "7"), ("7", "2")])
+        # Referenced parsing errors retain sorted-source precedence, even if
+        # the pair names the later failing file first.
+        pairs_path.write_text("zzz-invalid.cif\t000-invalid.pdb\n" + "".join(f"input-{i}.pdb\tinput-{i}.pdb\n" for i in range(8)), encoding="ascii")
+        serial = structure_pairs(1); parallel = structure_pairs(4)
+        if not serial.returncode or parallel.returncode != serial.returncode or parallel.stderr != serial.stderr:
+            raise SystemExit("referenced parsing error changed with worker count")
+        if "no ATOM or HETATM" not in serial.stderr or serial.stdout or parallel.stdout:
+            raise SystemExit("earliest referenced PDB error must win")
+        # Missing IDs are now checked before parsing any referenced file.
+        pairs_path.write_text("000-invalid.pdb\tabsent.pdb\n", encoding="ascii")
+        missing = structure_pairs(4)
+        if not missing.returncode or "absent.pdb" not in missing.stderr or missing.stdout:
+            raise SystemExit("missing IDs must be reported before structure parsing")
+        # Historical path normalization can produce ambiguous IDs on POSIX.
+        alias = parallel_dir / "prefix\\input-1.pdb"
+        write_pdb(alias)
+        pairs_path.write_text("input-6.pdb\tinput-1.pdb\n", encoding="ascii")
+        duplicate = structure_pairs(4)
+        if not duplicate.returncode or "duplicate protein ID" not in duplicate.stderr:
+            raise SystemExit("preload resolver must preserve loader ID ambiguity")
+        pairs_path.write_text("input-6.pdb\tinput-6.pdb\n", encoding="ascii")
+        if structure_pairs(4).returncode:
+            raise SystemExit("unreferenced ambiguous IDs must remain ignorable")
+        pairs_path.write_text("# empty list\n", encoding="ascii")
+        empty_pairs = structure_pairs(4)
+        if empty_pairs.returncode or len(empty_pairs.stdout.strip().splitlines()) != 1:
+            raise SystemExit("empty pair list must emit only its header without parsing")
+
         empty_dir = root / "empty_structures"
         empty_dir.mkdir()
         (empty_dir / "README.txt").write_text("no structures here\n", encoding="ascii")

@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <limits>
 #include <vector>
 
 namespace hiko = hikoboshi::algorithms;
@@ -441,6 +442,120 @@ void test_structural_invalid_reasons() {
   }
 }
 
+void require_same_metric(hiko_u::MetricValue a, hiko_u::MetricValue b) {
+  if (a.valid != b.valid || a.reason != b.reason ||
+      (a.valid && a.value != b.value))
+    fail("shared superposition must retain exact standalone metric values");
+}
+
+void test_shared_superposition() {
+  StructureFixture query(19), target(19);
+  for (std::size_t i = 0; i < 19; ++i) {
+    query.set_ca(i, {double(i), double(i % 3), double(i % 5)});
+    target.set_ca(i, {double(i) + 2.5, double(i % 4), double(i % 6)});
+  }
+  for (const std::size_t aligned : {0U, 1U, 2U, 3U, 19U}) {
+    auto path = diagonal_path(aligned);
+    path.steps.push_back({-1, 3, 1.0F});
+    path.steps.push_back({99, 99, 1.0F});
+    for (const std::size_t qlen : {0U, 19U, 50U}) {
+      for (const std::size_t tlen : {0U, 19U, 71U}) {
+        auto shared = hiko::compute_superposition_metrics(
+            path, query.view(), target.view(), qlen, tlen);
+        auto tm = hiko::compute_tm_scores(path, query.view(), target.view(), qlen, tlen);
+        require_same_metric(shared.rmsd,
+            hiko::compute_rmsd(path, query.view(), target.view()));
+        require_same_metric(shared.tm.query_norm, tm.query_norm);
+        require_same_metric(shared.tm.target_norm, tm.target_norm);
+      }
+    }
+  }
+  const auto missing = hiko::compute_superposition_metrics(diagonal_path(3), {}, {}, 0, 0);
+  if (missing.rmsd.reason != hiko_u::MetricInvalidReason::MissingStructureMetadata ||
+      missing.tm.query_norm.reason != missing.rmsd.reason ||
+      missing.tm.target_norm.reason != missing.rmsd.reason)
+    fail("missing metadata must precede zero TM denominator");
+}
+
+void test_lddt_reuse_with_mutable_inputs() {
+  StructureFixture query(3), target(3);
+  for (std::size_t i = 0; i < 3; ++i) {
+    const double x = i == 2 ? 3.0 : double(i);
+    query.set_ca(i, {x, 0, 0});
+    target.set_ca(i, {x, 0, 0});
+  }
+  const auto path = diagonal_path(3);
+  // Exercise repeated contents, FIFO eviction and changes at the same address.
+  // Two deltas are |x-1| and the endpoint delta is zero.
+  for (unsigned pass = 0; pass < 3; ++pass) {
+    for (unsigned step = 0; step < 25; ++step) {
+      const float x = static_cast<float>(step) / 8.0F;
+      target.set_ca(1, {x, 0, 0});
+      unsigned passes = 0;
+      for (const double threshold : {0.5, 1.0, 2.0, 4.0})
+        if (std::fabs(double(x) - 1.0) <= threshold) ++passes;
+      const double expected = double(4 + 2 * passes) / 12.0;
+      for (unsigned repeat = 0; repeat < 3; ++repeat) {
+        auto result = hiko::compute_lddt(path, query.view(), target.view());
+        if (!result.lddt.valid || result.lddt.value != expected)
+          fail("lDDT reuse must validate coordinates, including reused addresses");
+      }
+    }
+  }
+  target.set_ca(1, {1.6, 0, 0});
+  const auto narrow = hiko::compute_lddt(path, query.view(), target.view(), 1.0);
+  if (!narrow.lddt_byA.valid || narrow.lddt_byA.value != 0.75 || narrow.lddt_byB.valid)
+    fail("lDDT contacts must honor changed radius and directional denominators");
+  const auto wide = hiko::compute_lddt(path, query.view(), target.view(), 15.0);
+  if (wide.lddt.value != 10.0 / 12.0) fail("lDDT radius changes must invalidate reuse");
+  target.atom_sources[hiko_u::kCanonicalAtomCount +
+                      static_cast<std::size_t>(hiko_u::CanonicalAtom::CA)] =
+      hiko_u::AtomSource::Missing;
+  for (unsigned repeat = 0; repeat < 3; ++repeat) {
+    const auto partial = hiko::compute_lddt(path, query.view(), target.view());
+    if (!partial.lddt.valid || partial.lddt_byA.value != 1.0 / 3.0 ||
+        partial.lddt_byB.value != 1.0 || partial.lddt_aln.value != 1.0)
+      fail("observed-mask changes must invalidate cached reference contacts");
+  }
+  const auto short_path = hiko::compute_lddt(diagonal_path(1), query.view(), target.view());
+  if (!short_path.lddt.valid || short_path.lddt.value != 0 || short_path.lddt_aln.valid)
+    fail("contact reuse must rebuild alignment-dependent counters each call");
+  for (const double radius : {std::numeric_limits<double>::infinity(),
+                              std::numeric_limits<double>::quiet_NaN()}) {
+    const auto nonfinite = hiko::compute_lddt(path, query.view(), target.view(), radius);
+    if (!nonfinite.lddt.valid || nonfinite.lddt_byA.value != 1.0 / 3.0)
+      fail("nonfinite radius must retain the direct traversal's behavior");
+  }
+}
+
+void test_lddt_bounded_contact_fallback() {
+  // 257 coincident residues exceed the bounded contact count. The fallback
+  // must score every pair, including after mutation and repeated calls.
+  StructureFixture query(257), target(257);
+  for (std::size_t i = 0; i < 257; ++i) {
+    query.set_ca(i, {0, 0, 0});
+    target.set_ca(i, {0, 0, 0});
+  }
+  const auto path = diagonal_path(257);
+  for (unsigned repeat = 0; repeat < 3; ++repeat) {
+    auto result = hiko::compute_lddt(path, query.view(), target.view());
+    if (!result.lddt.valid || result.lddt.value != 1.0)
+      fail("dense lDDT fallback must retain all contacts");
+  }
+  target.set_ca(0, {100, 0, 0});
+  auto changed = hiko::compute_lddt(path, query.view(), target.view());
+  if (changed.lddt_byA.value != 255.0 / 257.0 || changed.lddt_byB.value != 1.0)
+    fail("dense fallback must honor coordinate changes");
+  StructureFixture long_query(4097), long_target(4097);
+  for (std::size_t i = 0; i < 3; ++i) {
+    long_query.set_ca(i, {double(i), 0, 0});
+    long_target.set_ca(i, {double(i), 0, 0});
+  }
+  auto large = hiko::compute_lddt(diagonal_path(3), long_query.view(), long_target.view());
+  if (!large.lddt.valid || large.lddt.value != 1.0)
+    fail("long structure fallback must preserve observed-contact semantics");
+}
+
 }  // namespace
 
 int main() {
@@ -455,5 +570,8 @@ int main() {
   test_lddt_canonical_partial_coverage();
   test_lddt_canonical_asymmetric_coverage();
   test_structural_invalid_reasons();
+  test_shared_superposition();
+  test_lddt_reuse_with_mutable_inputs();
+  test_lddt_bounded_contact_fallback();
   return 0;
 }

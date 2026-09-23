@@ -134,11 +134,26 @@ class LoadedStructure {
   std::unique_ptr<Impl> impl_;
 };
 
+/// Input ID used by load_structure_from_file, without reading the file.
+/// Preserves case and the historical slash/backslash separator handling.
+[[nodiscard]] std::string structure_input_id_from_path(std::string_view path);
+
 StructureFormat detect_structure_format(std::string_view path,
                                         std::string_view content) noexcept;
 
 [[nodiscard]] universal::Result<LoadedStructure> load_structure_from_file(
     std::string_view path,
+    const StructureLoadOptions& options = {});
+
+// Load an ordered file list with bounded parsing concurrency. Zero threads
+// selects hardware concurrency; at most 32 workers are used, and lists shorter
+// than eight files stay serial. One thread is explicitly serial. Options apply
+// identically to every file. Output is replaced only on success; failures report
+// the earliest failing input, regardless of worker completion order.
+[[nodiscard]] universal::Status load_structures_from_files(
+    universal::Span<const std::string> paths,
+    std::vector<LoadedStructure>& output,
+    std::size_t thread_count = 1,
     const StructureLoadOptions& options = {});
 
 [[nodiscard]] universal::Result<LoadedStructure> load_pdb_from_string(

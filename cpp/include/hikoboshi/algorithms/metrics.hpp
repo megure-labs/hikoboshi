@@ -23,6 +23,11 @@ struct TmScoreMetrics {
   hikoboshi::universal::MetricValue target_norm;
 };
 
+struct SuperpositionMetrics {
+  hikoboshi::universal::MetricValue rmsd;
+  TmScoreMetrics tm;
+};
+
 struct LddtMetrics {
   hikoboshi::universal::MetricValue lddt;
   hikoboshi::universal::MetricValue lddt_byA;
@@ -149,6 +154,15 @@ hikoboshi::universal::MetricValue compute_rmsd(
     const hikoboshi::universal::StructureView& target) noexcept;
 
 TmScoreMetrics compute_tm_scores(
+    const hikoboshi::universal::AlignmentPath& path,
+    const hikoboshi::universal::StructureView& query,
+    const hikoboshi::universal::StructureView& target,
+    std::size_t query_length,
+    std::size_t target_length) noexcept;
+
+// Compute RMSD and both TM normalizations using one superposition and one
+// transformed-distance traversal, with the standalone metrics' validity rules.
+SuperpositionMetrics compute_superposition_metrics(
     const hikoboshi::universal::AlignmentPath& path,
     const hikoboshi::universal::StructureView& query,
     const hikoboshi::universal::StructureView& target,

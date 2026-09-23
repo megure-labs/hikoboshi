@@ -257,6 +257,49 @@ void test_mpnn_workspace_prepare_reuses_capacity_after_warmup() {
   }
 }
 
+// Exercise both sides of the phase-size maximum, including zero-sized views,
+// then change shape repeatedly to catch stale slices after arena growth.
+void test_mpnn_phase_storage_lifetimes_and_reuse() {
+  hiko_ad::Mpnn64WorkspaceStorage owned;
+  for (std::size_t residues : {0U, 3U, 80U, 2U, 100U, 0U}) {
+    for (std::size_t neighbors : {1U, 2U, 64U}) {
+      const hiko_md::Mpnn64MemoryPlan plan{residues, 64, neighbors, 16, 3};
+      owned.prepare(plan);
+      auto& w = owned.workspace;
+      // Fill the earlier phase, then verify every later live span is disjoint
+      // by writing distinct values and reading all of them back.
+      for (std::size_t i = 0; i < w.rbf_features.size; ++i)
+        w.rbf_features.data[i] = -123.0F;
+      const hiko_u::Span<float> spans[] = {
+          w.edge_state, w.message_state, w.projected_message_state,
+          w.gathered_state, w.residue_state, w.residue_scratch, w.ffn_hidden};
+      for (std::size_t i = 0; i < 7; ++i)
+        for (std::size_t j = 0; j < spans[i].size; ++j)
+          spans[i].data[j] = static_cast<float>(i + 1);
+      for (std::size_t i = 0; i < 7; ++i)
+        for (std::size_t j = 0; j < spans[i].size; ++j)
+          if (spans[i].data[j] != static_cast<float>(i + 1))
+            fail("simultaneously live MPNN spans must not overlap");
+      const auto* warmed = w.edge_state.data;
+      hikoboshi::tests::AllocationCounter::reset();
+      hikoboshi::tests::AllocationCounter::set_enabled(true);
+      owned.prepare(plan);
+      hikoboshi::tests::AllocationCounter::set_enabled(false);
+      if (hikoboshi::tests::AllocationCounter::allocations() ||
+          w.edge_state.data != warmed)
+        fail("same-shape shared workspace must reuse its allocation");
+    }
+  }
+  // At the production descriptor the old buffers require 276492 bytes per
+  // residue; phase reuse must remove at least 24% without dropping any span.
+  const hiko_md::Mpnn64MemoryPlan plan{1, 64, 64, 16, 3};
+  const std::size_t bytes = 3 * sizeof(float) + 416 * 64 * sizeof(float) +
+      64 * (sizeof(float) + sizeof(std::int32_t)) +
+      hiko_ad::mpnn64_phase_storage_count(plan) * sizeof(float);
+  if (bytes > 276492 * 76 / 100)
+    fail("phase workspace must retain its memory reduction");
+}
+
 hiko_ad::ResolvedAlignmentProblem fixed_score_problem(const float* scores,
                                                    std::size_t query_length,
                                                    std::size_t target_length) {
@@ -437,6 +480,7 @@ void test_pairwise_embedding_pipeline_score_and_path() {
 }  // namespace
 
 int main() {
+  test_mpnn_phase_storage_lifetimes_and_reuse();
   test_resolved_alignment_problem_contract();
   test_embedding_only_workspace_skips_mpnn_scratch();
   test_mpnn_workspace_ffn_capacity_matches_memory_plan();

@@ -188,7 +188,7 @@ void test_superposed_two_model_pdb_and_remarks() {
   }
 
   const std::string& pdb = rendered.value.contents;
-  if (pdb.find("REMARK HIKOBOSHI_VERSION 0.1.0") == std::string::npos ||
+  if (pdb.find("REMARK HIKOBOSHI_VERSION 0.1.1") == std::string::npos ||
       pdb.find("REMARK HIKOBOSHI_INPUT_QUERY query_struct") ==
           std::string::npos ||
       pdb.find("REMARK HIKOBOSHI_INPUT_TARGET target_struct") ==

@@ -14,7 +14,7 @@
 
 Hikoboshi is Megure Labs' native bioinformatics suite. Its goal is to replace
 the fragmented collection of tools used for biological sequence and structure
-analysis with one CLI, Python API, and C++ core. Version 0.1.0 starts with
+analysis with one CLI, Python API, and C++ core. Version 0.1.1 starts with
 learned sequence and structure encoders, pairwise and all-vs-all alignment,
 scoring, artifact generation, and ProteinMPNN inverse folding. The same core
 will support database search, multiple sequence alignment, phylogenetics,
@@ -30,7 +30,7 @@ are all named `hikoboshi`; Python examples use the conventional short alias
 > not guaranteed to be backward compatible; pin an exact version when a stable
 > CLI, Python, or C++ interface is required.
 
-## What runs end to end in 0.1.0
+## What runs end to end in 0.1.1
 
 | Input or task | Native pipeline | Result |
 | --- | --- | --- |
@@ -46,7 +46,7 @@ encodings instead of recomputing a protein for every comparison.
 
 ## Build and install
 
-**PyPI and Conda packages are coming soon.** Hikoboshi `0.1.0` is currently a
+**PyPI and Conda packages are coming soon.** Hikoboshi `0.1.1` is currently a
 source release built with Meson. For the native CLI and C++ library:
 
 ```bash
@@ -277,13 +277,13 @@ For scheduler thresholds, workspace behavior, and benchmark methodology, see
 
 ## Release scope
 
-Version `0.1.0` is the portable scalar CPU release. CUDA, HIP, Metal, Vulkan,
+Version `0.1.1` is the portable scalar CPU release. CUDA, HIP, Metal, Vulkan,
 OpenCL, and CPU SIMD backend names are reserved in the capability model but
-are not buildable release backends yet. This first cut implements native
+are not buildable release backends yet. This release implements native
 encoding, pairwise alignment, selected-pair and all-pairs workloads, scoring,
 artifact generation, and inverse folding. Database search, MSA, clustering,
 guide-tree construction, phylogenetics, and other suite surfaces are not in
-`0.1.0` yet; they are the expansion path for the same runtime, not separate
+`0.1.1` yet; they are the expansion path for the same runtime, not separate
 projects.
 
 ## Contributing, license, and provenance

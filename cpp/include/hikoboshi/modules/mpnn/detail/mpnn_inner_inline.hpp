@@ -316,6 +316,28 @@ HIKOBOSHI_FORCE_INLINE void linear_nt_inline(
     std::size_t output_dimension,
     std::size_t input_dimension,
     float* output) noexcept {
+  if (hikoboshi::dispatch::active_gemm_parity_mode() ==
+      hikoboshi::dispatch::GemmParityMode::Fast) {
+    hikoboshi::primitives::linalg::GemmScalarRequest projection{};
+    projection.lhs = input;
+    projection.rhs = weights.weight.data;
+    projection.m = row_count;
+    projection.n = output_dimension;
+    projection.k = input_dimension;
+    hikoboshi::dispatch::gemm_nt_forward(
+        hikoboshi::dispatch::ScalarTag{},
+        hikoboshi::dispatch::FastParityTag{}, projection, output);
+    if (weights.bias.data != nullptr && weights.bias.size != 0) {
+      hikoboshi::primitives::compute::BiasAddScalarRequest bias{};
+      bias.input = output;
+      bias.bias = weights.bias.data;
+      bias.row_count = row_count;
+      bias.row_dimension = output_dimension;
+      hikoboshi::dispatch::bias_add_forward(
+          hikoboshi::dispatch::ScalarTag{}, bias, output);
+    }
+    return;
+  }
   linear_nt_blocked4_inline(input, weights, row_count, output_dimension,
                             input_dimension, output);
 }
@@ -326,6 +348,11 @@ HIKOBOSHI_FORCE_INLINE void linear_row_nt_inline(
     std::size_t output_dimension,
     std::size_t input_dimension,
     float* output) noexcept {
+  if (hikoboshi::dispatch::active_gemm_parity_mode() ==
+      hikoboshi::dispatch::GemmParityMode::Fast) {
+    linear_nt_inline(input, weights, 1, output_dimension, input_dimension, output);
+    return;
+  }
   std::size_t output_index = 0;
   for (; output_index + 4 <= output_dimension; output_index += 4) {
     const float* weight0 =

@@ -15,6 +15,7 @@
 
 #include <hikoboshi/algorithms/detail/all_vs_all_workspace.hpp>
 #include <hikoboshi/algorithms/detail/pair_scheduler.hpp>
+#include <hikoboshi/algorithms/detail/encoding_scheduler.hpp>
 #include <hikoboshi/algorithms/detail/streaming_sink.hpp>
 #include <hikoboshi/algorithms/pairwise.hpp>
 #include <hikoboshi/universal/detail/thread_pool.hpp>
@@ -64,21 +65,7 @@ bool add_mpnn_workspace_storage_bytes(
                    sizeof(std::int32_t)) &&
          add_bytes(total, pmd::mpnn64_neighbor_slot_count(plan),
                    sizeof(float)) &&
-         add_bytes(total, pmd::mpnn64_neighbor_rbf_count(plan),
-                   sizeof(float)) &&
-         add_bytes(total, pmd::mpnn64_residue_hidden_count(plan),
-                   sizeof(float)) &&
-         add_bytes(total, pmd::mpnn64_neighbor_hidden_count(plan),
-                   sizeof(float)) &&
-         add_bytes(total, pmd::mpnn64_neighbor_hidden_count(plan),
-                   sizeof(float)) &&
-         add_bytes(total, pmd::mpnn64_neighbor_hidden_count(plan),
-                   sizeof(float)) &&
-         add_bytes(total, pmd::mpnn64_neighbor_hidden_count(plan),
-                   sizeof(float)) &&
-         add_bytes(total, pmd::mpnn64_residue_hidden_count(plan),
-                   sizeof(float)) &&
-         add_bytes(total, pmd::mpnn64_ffn_hidden_count(plan), sizeof(float));
+         add_bytes(total, mpnn64_phase_storage_count(plan), sizeof(float));
 }
 
 }  // namespace
@@ -1038,30 +1025,47 @@ bool should_parallel_encode_structures(
 void note_pair_list_protein_encoded() noexcept;
 
 template <typename StructureEncodeRequest>
+Status encode_structure_cached(const StructureEncodeRequest& request,
+                                const StructureView& structure,
+                                std::size_t max_residue_count,
+                                bool note_encode,
+                                PairwiseWorkspace& workspace,
+                                bool& workspace_ready,
+                                float* output) {
+  const std::size_t count = structure.residue_count * request.descriptor.hidden_dimension;
+  if (request.embedding_cache != nullptr) {
+    bool hit = false;
+    const Status status = request.embedding_cache->load(structure, {output, count}, hit);
+    if (!hikoboshi::universal::is_ok(status) || hit) return status;
+  }
+  if (!workspace_ready) {
+    const Status status = workspace.prepare(
+        structure_workspace_plan(max_residue_count, request.descriptor));
+    if (!hikoboshi::universal::is_ok(status)) return status;
+    workspace_ready = true;
+  }
+  const Status status = encode_structure(structure, request.descriptor, request.weights,
+                                         workspace, output);
+  if (!hikoboshi::universal::is_ok(status)) return status;
+  if (note_encode) note_pair_list_protein_encoded();
+  return request.embedding_cache != nullptr
+      ? request.embedding_cache->store(structure, {output, count})
+      : hikoboshi::universal::ok_status();
+}
+
+template <typename StructureEncodeRequest>
 Status encode_structures_serial(
     const StructureEncodeRequest& request,
     std::size_t max_residue_count,
     bool note_encode,
     EncodedEmbeddingCache& cache) {
-  const detail::PairwiseWorkspacePlan workspace_plan =
-      structure_workspace_plan(max_residue_count, request.descriptor);
-  PairwiseWorkspace encode_workspace;
-  Status status = encode_workspace.prepare(workspace_plan);
-  if (!hikoboshi::universal::is_ok(status)) {
-    return status;
-  }
-
+  PairwiseWorkspace workspace;
+  bool ready = false;
   for (std::size_t index = 0; index < request.structures.size; ++index) {
-    const StructureView& structure = request.structures.data[index];
-    float* output = cache.slot(index);
-    status = encode_structure(structure, request.descriptor, request.weights,
-                              encode_workspace, output);
-    if (!hikoboshi::universal::is_ok(status)) {
-      return status;
-    }
-    if (note_encode) {
-      note_pair_list_protein_encoded();
-    }
+    const Status status = encode_structure_cached(
+        request, request.structures.data[index], max_residue_count, note_encode,
+        workspace, ready, cache.slot(index));
+    if (!hikoboshi::universal::is_ok(status)) return status;
   }
   return hikoboshi::universal::ok_status();
 }
@@ -1082,44 +1086,54 @@ Status encode_structures_parallel(
 
   Status encode_status = hikoboshi::universal::ok_status();
   try {
-    pool->parallel_for(0, request.structures.size,
+    const auto ranges = detail::partition_encoding_ranges(
+        request.structures.size, thread_count, [&](std::size_t index) {
+          return detail::mpnn_encoding_cost(
+              request.structures.data[index].residue_count,
+              request.descriptor.neighbor_count);
+        });
+    std::vector<Status> range_status(ranges.size(), hikoboshi::universal::ok_status());
+    pool->parallel_for(0, ranges.size(),
                        [&](std::size_t worker_id,
-                           std::size_t begin,
-                           std::size_t end) {
+                           std::size_t range_begin,
+                           std::size_t range_end) {
       if (worker_id >= worker_workspaces.size) {
         throw PairwiseStatusFailure{
             hikoboshi::universal::internal_error_status(
                 "all-vs-all encoder worker id exceeded workspace count")};
       }
-      PairwiseWorkspace& workspace =
-          worker_workspaces.data[worker_id].encoder;
-      std::size_t worker_max_residue_count = 0;
-      for (std::size_t index = begin; index < end; ++index) {
-        worker_max_residue_count =
-            std::max(worker_max_residue_count,
-                     request.structures.data[index].residue_count);
-      }
-      const detail::PairwiseWorkspacePlan workspace_plan =
-          structure_workspace_plan(worker_max_residue_count,
-                                   request.descriptor);
-      const Status prepare_status = workspace.prepare(workspace_plan);
-      if (!hikoboshi::universal::is_ok(prepare_status)) {
-        throw PairwiseStatusFailure{prepare_status};
-      }
-      for (std::size_t index = begin; index < end; ++index) {
-        const StructureView& structure = request.structures.data[index];
-        float* output = cache.slot(index);
-        const Status encode_status =
-            encode_structure(structure, request.descriptor, request.weights,
-                             workspace, output);
-        if (!hikoboshi::universal::is_ok(encode_status)) {
-          throw PairwiseStatusFailure{encode_status};
-        }
-        if (note_encode) {
-          note_pair_list_protein_encoded();
+      PairwiseWorkspace& workspace = worker_workspaces.data[worker_id].encoder;
+      for (std::size_t range_index = range_begin; range_index < range_end; ++range_index) {
+        const auto range = ranges[range_index];
+        auto& result = range_status[range_index];
+        try {
+          std::size_t worker_max_residue_count = 0;
+          for (std::size_t index = range.begin; index < range.end; ++index) {
+            worker_max_residue_count = std::max(
+                worker_max_residue_count, request.structures.data[index].residue_count);
+          }
+          bool workspace_ready = false;
+          for (std::size_t index = range.begin; index < range.end; ++index) {
+            const StructureView& structure = request.structures.data[index];
+            result = encode_structure_cached(request, structure, worker_max_residue_count,
+                note_encode, workspace, workspace_ready, cache.slot(index));
+            if (!hikoboshi::universal::is_ok(result)) break;
+          }
+        } catch (const std::bad_alloc&) {
+          result = hikoboshi::universal::unavailable_status(
+              "all-vs-all parallel structure encoding allocation failed");
         }
       }
     });
+    // Workers stop at their first error, but all ranges join before selecting
+    // the earliest input-range failure. Completion order must not choose the
+    // reported error when scheduling boundaries change.
+    for (const Status result : range_status) {
+      if (!hikoboshi::universal::is_ok(result)) {
+        encode_status = result;
+        break;
+      }
+    }
   } catch (const PairwiseStatusFailure& failure) {
     encode_status = failure.status;
   } catch (const std::bad_alloc&) {
@@ -1732,52 +1746,53 @@ Status run_parallel_resolved_list_pairs(
     return status;
   }
 
-  std::vector<PairwiseResultRecord> records;
+  // Bounded batches keep result/path staging independent of total pair count.
+  // Dynamic assignment within each batch balances arbitrary caller pair order;
+  // joining before draining keeps callbacks serial and errors deterministic.
+  constexpr std::size_t kMaxBatchRecords = 1024;
+  constexpr std::size_t kBatchBytes = 64U * 1024U * 1024U;
+  const std::size_t steps = workspace_plan.max_query_length + workspace_plan.max_target_length;
+  const std::size_t step_bytes = sizeof(decltype(PairwiseResultRecord{}.result.path.steps)::value_type);
+  const std::size_t bytes_per_record = steps > (kBatchBytes - sizeof(PairwiseResultRecord)) / step_bytes
+      ? kBatchBytes : sizeof(PairwiseResultRecord) + steps * step_bytes;
+  const std::size_t batch_size = std::min({pair_count, kMaxBatchRecords,
+      std::max(std::size_t{1}, kBatchBytes / bytes_per_record)});
   try {
-    records.resize(pair_count);
-    status =
-        prepare_parallel_workspaces(worker_workspaces, thread_count,
-                                    workspace_plan);
+    std::vector<PairwiseResultRecord> records(batch_size);
+    std::vector<Status> statuses(batch_size);
+    for (auto& record : records) record.result.path.steps.reserve(steps);
+    status = prepare_parallel_workspaces(worker_workspaces, thread_count, workspace_plan);
+    if (!hikoboshi::universal::is_ok(status)) return status;
+    for (std::size_t base = 0; base < pair_count;) {
+      const std::size_t count = std::min(batch_size, pair_count - base);
+      std::atomic<std::size_t> next{0};
+      pool->parallel_for(0, std::min(count, thread_count),
+          [&](std::size_t worker, std::size_t, std::size_t) {
+        for (;;) {
+          const auto index = next.fetch_add(1, std::memory_order_relaxed);
+          if (index >= count) break;
+          try {
+            statuses[index] = compute_embedding_pair_record(base + index, source,
+                embeddings, structures, options, worker_workspaces.data[worker].pairwise,
+                records[index]);
+          } catch (const std::bad_alloc&) {
+            statuses[index] = hikoboshi::universal::unavailable_status(
+                "pair-list parallel pair result allocation failed");
+          }
+        }
+      });
+      for (std::size_t index = 0; index < count; ++index) {
+        if (!hikoboshi::universal::is_ok(statuses[index])) return statuses[index];
+        status = sink.receive(records[index]);
+        if (!hikoboshi::universal::is_ok(status)) return status;
+      }
+      base += count;
+    }
   } catch (const std::bad_alloc&) {
     return hikoboshi::universal::unavailable_status(
         "pair-list parallel preparation allocation failed");
   }
-  if (!hikoboshi::universal::is_ok(status)) {
-    return status;
-  }
-
-  try {
-    pool->parallel_for(0, pair_count, [&](std::size_t worker_id,
-                                          std::size_t begin,
-                                          std::size_t end) {
-      if (worker_id >= worker_workspaces.size) {
-        throw PairwiseStatusFailure{
-            hikoboshi::universal::internal_error_status(
-                "pair-list worker id exceeded workspace count")};
-      }
-      PairwiseWorkspace& workspace =
-          worker_workspaces.data[worker_id].pairwise;
-      for (std::size_t pair_index = begin; pair_index < end; ++pair_index) {
-        const Status pair_status =
-            compute_embedding_pair_record(pair_index, source, embeddings,
-                                          structures, options, workspace,
-                                          records[pair_index]);
-        if (!hikoboshi::universal::is_ok(pair_status)) {
-          throw PairwiseStatusFailure{pair_status};
-        }
-      }
-    });
-  } catch (const PairwiseStatusFailure& failure) {
-    return failure.status;
-  } catch (const std::bad_alloc&) {
-    return hikoboshi::universal::unavailable_status(
-        "pair-list parallel pair result allocation failed");
-  }
-
-  BoundedRecordStagingResult staging_result{};
-  return bounded_record_staging(
-      {{records.data(), records.size()}, {nullptr, 0}, &sink},
-      staging_result);
+  return hikoboshi::universal::ok_status();
 }
 
 // Shared per-pair execution dispatcher for all-vs-all and pair-list (npc1b).

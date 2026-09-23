@@ -60,7 +60,7 @@ struct PipelineCapabilities {
 
 /// Combined backend and workflow capability report.
 ///
-/// Hikoboshi 0.1.0 reports scalar CPU as the default backend. Reserved backend
+/// Hikoboshi 0.1 reports scalar CPU as the default backend. Reserved backend
 /// families may appear here as unavailable with explanatory reasons.
 struct BackendCapabilities {
   CpuBackendCapabilities cpu{};

@@ -24,7 +24,7 @@ import hikoboshi as hiko  # noqa: E402
 from hikoboshi._arrays import load_core  # noqa: E402
 
 
-require(hiko.__version__ == "0.1.0", "package import must not require NumPy")
+require(hiko.__version__ == "0.1.1", "package import must not require NumPy")
 require(hiko.version_info()["product_name"] == "Hikoboshi", "version_info failed")
 
 core = load_core()

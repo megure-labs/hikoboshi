@@ -47,8 +47,7 @@ int run_main(int argc, char** argv) {
     return 0;
   }
   if (command == "--version") {
-    std::cout << "hikoboshi 0.1.0 placeholder\n";
-    return 0;
+    return run_version(argc - 2, argv + 2);
   }
   if (command == "encode") {
     return run_encode(argc - 2, argv + 2);

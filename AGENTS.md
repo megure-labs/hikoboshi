@@ -5,7 +5,7 @@ These instructions apply to the entire repository.
 ## Project
 
 Hikoboshi is one native suite for search, alignment, MSA, and the rest of
-bioinformatics. Version 0.1.0 ships the suite's sequence/structure
+bioinformatics. Version 0.1.1 ships the suite's sequence/structure
 encoding, pairwise and all-vs-all alignment, scoring, artifact-generation, and
 inverse-folding foundation; database search, MSA, phylogenetics, clustering,
 and other suite surfaces come later. Its command, Python package, and C++

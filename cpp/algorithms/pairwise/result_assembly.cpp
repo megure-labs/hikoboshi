@@ -77,13 +77,11 @@ MetricBlock compute_metric_block(
     block.coverage_byA = unavailable;
     block.coverage_byB = unavailable;
   } else {
-    block.rmsd = compute_rmsd(path, query_structure, target_structure);
-
-    const TmScoreMetrics tm =
-        compute_tm_scores(path, query_structure, target_structure, q_len,
-                          t_len);
-    block.tm_score_query = tm.query_norm;
-    block.tm_score_target = tm.target_norm;
+    const SuperpositionMetrics superposition = compute_superposition_metrics(
+        path, query_structure, target_structure, q_len, t_len);
+    block.rmsd = superposition.rmsd;
+    block.tm_score_query = superposition.tm.query_norm;
+    block.tm_score_target = superposition.tm.target_norm;
     const LddtMetrics lddt =
         compute_lddt(path, query_structure, target_structure);
     block.lddt = lddt.lddt;
