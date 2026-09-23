@@ -30,6 +30,33 @@ implement an externally reported idea under explicit bootstrap authority or,
 after enforcement, in a new Kaname scope. The maintainer must not import the
 external patch or claim provenance for work Kaname did not observe.
 
+## Bootstrap merge procedure
+
+While the base lacks `.provenance/KANAME_ENFORCEMENT_BASE`, an explicitly
+maintainer-authorized internal change may merge through a pull request without
+a GitHub approving review or code-owner approval. This supports the current
+single-maintainer repository; it does not claim independent review occurred.
+All required CI and provenance-policy checks must pass, all review threads
+must be resolved, and squash merge remains required. Authority, authorship,
+material assistance, validation, clean-room and licensing disclosures remain
+mandatory. External contributions remain closed.
+
+Admission workflows must resolve the author's current association from the
+GitHub API using trusted-base code, rather than relying on a stale event
+payload. Only OWNER or MEMBER is admitted; API or validation failure must not
+produce a passing admission result.
+
+An explicitly approved, narrowly scoped repair to these trusted-base admission
+workflows or the corresponding ruleset may use administrator authority. Such a
+repair must be disclosed and validated separately; it may not carry product
+changes or bypass required release validation. Ordinary bootstrap product
+changes must use the pull-request process above.
+
+Before activating Kaname enforcement, restore at least one approving review
+and code-owner approval in the live ruleset and establish an independent
+eligible code owner. The post-enforcement acceptance requirements below then
+apply in full.
+
 ## Enforcement boundary
 
 The final bootstrap commit will add the tracked marker
