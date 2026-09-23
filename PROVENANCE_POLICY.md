@@ -43,8 +43,14 @@ mandatory. External contributions remain closed.
 
 Admission workflows must resolve the author's current association from the
 GitHub API using trusted-base code, rather than relying on a stale event
-payload. Only OWNER or MEMBER is admitted; API or validation failure must not
-produce a passing admission result.
+payload. OWNER and MEMBER are admitted. During bootstrap only, an author whose
+organization association is unavailable may also be admitted when GitHub
+confirms that the same numeric user identity currently has repository admin
+permission. This is reported as BOOTSTRAP_REPOSITORY_ADMIN, never as invented
+organization membership. Write, maintain, triage, and read permissions do not
+qualify. The fallback is disabled when the enforcement marker exists in the
+trusted base. API or validation failure must not produce a passing admission
+result.
 
 An explicitly approved, narrowly scoped repair to these trusted-base admission
 workflows or the corresponding ruleset may use administrator authority. Such a

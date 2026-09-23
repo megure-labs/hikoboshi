@@ -48,7 +48,7 @@ jobs:
           AUTHOR_ASSOCIATION: ${{ steps.author.outputs.association }}
         run: |
           case "${AUTHOR_ASSOCIATION}" in
-            OWNER|MEMBER)
+            OWNER|MEMBER|BOOTSTRAP_REPOSITORY_ADMIN)
               ;;
             *)
               echo "::error::External contributions are temporarily closed until the production Kaname verifier is deployed."
